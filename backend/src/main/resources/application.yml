@@ -1,0 +1,240 @@
+spring:
+  application:
+    name: lazycord-backend
+
+---
+# Default Profile (Development)
+spring:
+  config:
+    activate:
+      on-profile: default
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lazycord
+    username: lazycord
+    password: lazycord
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: lazycord
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  keycloak:
+    auth-server-url: http://localhost:8081
+    realm: lazycord
+    resource: lazycord-backend
+    credentials:
+      secret: ${KEYCLOAK_CLIENT_SECRET:}
+    bearer-only: true
+    ssl-required: external
+    use-resource-role-mappings: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.lazycord: DEBUG
+    org.springframework.security: DEBUG
+    org.keycloak: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lazycord
+    username: lazycord
+    password: lazycord
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: lazycord
+      timeout: 2000ms
+  keycloak:
+    auth-server-url: http://localhost:8081
+    realm: lazycord
+    resource: lazycord-backend
+    credentials:
+      secret: ${KEYCLOAK_CLIENT_SECRET:}
+    bearer-only: true
+    ssl-required: external
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.lazycord: DEBUG
+    org.springframework.security: DEBUG
+    org.keycloak: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+# Staging Profile
+spring:
+  config:
+    activate:
+      on-profile: staging
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:staging-db}:5432/lazycord
+    username: ${DB_USERNAME:lazycord}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      idle-timeout: 300000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${REDIS_HOST:staging-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      timeout: 2000ms
+      ssl:
+        enabled: true
+  keycloak:
+    auth-server-url: ${KEYCLOAK_URL:https://auth-staging.lazycord.com}
+    realm: lazycord
+    resource: lazycord-backend
+    credentials:
+      secret: ${KEYCLOAK_CLIENT_SECRET}
+    bearer-only: true
+    ssl-required: all
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: WARN
+    com.lazycord: INFO
+    org.springframework.security: WARN
+    org.keycloak: WARN
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:prod-db}:5432/lazycord
+    username: ${DB_USERNAME:lazycord}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 20
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    out-of-order: false
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      timeout: 2000ms
+      ssl:
+        enabled: true
+      cluster:
+        max-redirects: 3
+  keycloak:
+    auth-server-url: ${KEYCLOAK_URL:https://auth.lazycord.com}
+    realm: lazycord
+    resource: lazycord-backend
+    credentials:
+      secret: ${KEYCLOAK_CLIENT_SECRET}
+    bearer-only: true
+    ssl-required: all
+    public-client: false
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+
+logging:
+  level:
+    root: WARN
+    com.lazycord: INFO
+    org.springframework.security: ERROR
+    org.keycloak: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
