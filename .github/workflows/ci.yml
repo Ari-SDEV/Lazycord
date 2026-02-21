@@ -12,7 +12,7 @@ jobs:
     defaults:
       run:
         working-directory: ./backend
-    
+
     services:
       postgres:
         image: postgres:17-alpine
@@ -27,25 +27,25 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      
+
       - name: Build with Maven
         run: mvn clean compile
-      
+
       - name: Run Tests
         run: mvn test
         env:
@@ -54,10 +54,10 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: lazycord
           SPRING_REDIS_HOST: localhost
           SPRING_REDIS_PORT: 6379
-      
+
       - name: Package Application
         run: mvn package -DskipTests
-      
+
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -65,38 +65,70 @@ jobs:
           name: backend-build
           path: backend/target/*.jar
 
-  notify:
-    needs: backend
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Notify Discord - Success
-        if: needs.backend.result == 'success'
-        uses: Ilshidur/action-discord@master
+      - name: Discord notification
+        if: always()
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_BUILD_WEBHOOK }}
-        with:
-          args: |
-            ✅ **Lazycord Build SUCCESS**
-            
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-            
-            All tests passed!
+          DISCORD_WEBHOOK: https://discord.com/api/webhooks/1473086011838828735/DnRGbiYck7IFa5WhITD31VVoiZYbpf-DtKj3-hzFNcC2HTYeCa6VpyRN1TGHP2ybYAJd
+          JOB_STATUS: ${{ job.status }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
 
-      - name: Notify Discord - Failure
-        if: needs.backend.result == 'failure'
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_BUILD_WEBHOOK }}
-        with:
-          args: |
-            ❌ **Lazycord Build FAILED**
-            
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-            
-            Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          if [ -z "${DISCORD_WEBHOOK:-}" ]; then
+            echo "DISCORD_WEBHOOK not set; skipping Discord notification."
+            exit 0
+          fi
+
+          RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
+          SHORT_SHA="${SHA:0:7}"
+
+          if [ -n "${PR:-}" ]; then
+            CONTEXT="PR: ${PR}"
+          else
+            CONTEXT="Branch: ${REF}"
+          fi
+
+          if [ "${JOB_STATUS}" = "success" ]; then
+            TITLE="✅ Build Success"
+            COLOR=3066993
+            CONTENT="Build #${RUN_NUMBER} completed successfully ✅"
+          elif [ "${JOB_STATUS}" = "failure" ]; then
+            TITLE="❌ Build Failed"
+            COLOR=15158332
+            CONTENT="<@.fluffiraffi> Build #${RUN_NUMBER} failed! Investigating... 🚨"
+          else
+            TITLE="⚠️ Build ${JOB_STATUS}"
+            COLOR=3447003
+            CONTENT="Build #${RUN_NUMBER} status: ${JOB_STATUS}"
+          fi
+
+          cat > /tmp/discord_payload.json <<EOF
+          {
+            "content": "${CONTENT}",
+            "embeds": [{
+              "title": "${TITLE}",
+              "color": ${COLOR},
+              "fields": [
+                {"name": "Repository", "value": "${REPO}", "inline": true},
+                {"name": "Run", "value": "[#${RUN_NUMBER}](${RUN_URL})", "inline": true},
+                {"name": "Commit", "value": "\`${SHORT_SHA}\`", "inline": true},
+                {"name": "Context", "value": "${CONTEXT}", "inline": false},
+                {"name": "Actor", "value": "${ACTOR}", "inline": true},
+                {"name": "Status", "value": "${JOB_STATUS}", "inline": true}
+              ],
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "footer": {"text": "GitHub Actions | Lazycord CI"}
+            }]
+          }
+          EOF
+
+          curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -d @/tmp/discord_payload.json \
+            "$DISCORD_WEBHOOK" || echo "Discord notification failed"
