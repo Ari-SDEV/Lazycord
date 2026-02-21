@@ -1,0 +1,60 @@
+# Test Configuration for Lazycord Backend
+spring:
+  application:
+    name: lazycord-backend-test
+  
+  # H2 In-Memory Database for fast unit tests
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  # Disable Flyway for tests (using ddl-auto instead)
+  flyway:
+    enabled: false
+
+# Keycloak Test Configuration
+keycloak:
+  auth-server-url: http://localhost:8080
+  realm: lazycord-test
+  resource: lazycord-backend-test
+  credentials:
+    secret: test-secret
+  admin-username: admin
+  admin-password: admin
+  frontend-client-id: lazycord-frontend-test
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.lazycord: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server Configuration for Tests
+server:
+  port: 0  # Random port for parallel test execution
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
