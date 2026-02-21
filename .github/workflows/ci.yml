@@ -33,18 +33,30 @@ jobs:
         ports:
           - 6379:6379
 
-      keycloak:
-        image: quay.io/keycloak/keycloak:24.0
-        env:
-          KEYCLOAK_ADMIN: admin
-          KEYCLOAK_ADMIN_PASSWORD: admin
-          KC_HTTP_ENABLED: "true"
-        ports:
-          - 8080:8080
-        options: --health-cmd "curl -f http://localhost:8080/health || exit 1" --health-interval 10s --health-timeout 5s --health-retries 15 --health-start-period 120s
-
     steps:
       - uses: actions/checkout@v4
+
+      - name: Start Keycloak
+        run: |
+          docker run -d \
+            --name keycloak \
+            --network host \
+            -e KEYCLOAK_ADMIN=admin \
+            -e KEYCLOAK_ADMIN_PASSWORD=admin \
+            -e KC_HTTP_ENABLED=true \
+            -p 8080:8080 \
+            quay.io/keycloak/keycloak:24.0 \
+            start-dev
+          
+          # Wait for Keycloak to be ready
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/health; then
+              echo "Keycloak is ready!"
+              break
+            fi
+            echo "Waiting for Keycloak... ($i/60)"
+            sleep 2
+          done
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -64,6 +76,7 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: lazycord
           SPRING_REDIS_HOST: localhost
           SPRING_REDIS_PORT: 6379
+          KEYCLOAK_AUTH_SERVER_URL: http://localhost:8080
 
       - name: Package Application
         run: mvn package -DskipTests
