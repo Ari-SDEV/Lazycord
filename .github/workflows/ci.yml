@@ -75,9 +75,8 @@ jobs:
       - name: Run Tests
         run: mvn test
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/lazycord_test
-          SPRING_DATASOURCE_USERNAME: lazycord
-          SPRING_DATASOURCE_PASSWORD: lazycord
+          # Database config comes from application-test.yml (H2)
+          # Keycloak config comes from application-test.yml
           SPRING_REDIS_HOST: localhost
           SPRING_REDIS_PORT: 6379
           KEYCLOAK_AUTH_SERVER_URL: http://localhost:8080
