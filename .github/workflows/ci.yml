@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: lazycord
+          POSTGRES_PASSWORD: lazycord
+          POSTGRES_DB: lazycord_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: ./mvnw clean compile
+      
+      - name: Run Tests
+        run: ./mvnw test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/lazycord_test
+          SPRING_DATASOURCE_USERNAME: lazycord
+          SPRING_DATASOURCE_PASSWORD: lazycord
+          SPRING_REDIS_HOST: localhost
+          SPRING_REDIS_PORT: 6379
+      
+      - name: Package Application
+        run: ./mvnw package -DskipTests
+      
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-build
+          path: backend/target/*.jar
+
+  notify:
+    needs: backend
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify Discord - Success
+        if: needs.backend.result == 'success'
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_BUILD_WEBHOOK }}
+        with:
+          args: |
+            ✅ **Lazycord Build SUCCESS**
+            
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            All tests passed!
+
+      - name: Notify Discord - Failure
+        if: needs.backend.result == 'failure'
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_BUILD_WEBHOOK }}
+        with:
+          args: |
+            ❌ **Lazycord Build FAILED**
+            
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
