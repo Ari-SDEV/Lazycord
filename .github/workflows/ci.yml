@@ -36,18 +36,12 @@ jobs:
       keycloak:
         image: quay.io/keycloak/keycloak:24.0
         env:
-          KC_BOOTSTRAP_ADMIN_USERNAME: admin
-          KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+          KEYCLOAK_ADMIN: admin
+          KEYCLOAK_ADMIN_PASSWORD: admin
           KC_HTTP_ENABLED: "true"
-        options: >-
-          --health-cmd "curl -f http://localhost:8080/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 60s
         ports:
           - 8080:8080
-        command: ["start-dev"]
+        options: --health-cmd "curl -f http://localhost:8080/health || exit 1" --health-interval 10s --health-timeout 5s --health-retries 15 --health-start-period 120s
 
     steps:
       - uses: actions/checkout@v4
