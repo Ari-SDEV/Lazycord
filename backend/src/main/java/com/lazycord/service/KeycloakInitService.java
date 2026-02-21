@@ -246,7 +246,7 @@ public class KeycloakInitService {
         }
     }
 
-    private String extractUserId(javax.ws.rs.core.Response response) {
+    private String extractUserId(jakarta.ws.rs.core.Response response) {
         if (response.getStatus() == 201) {
             String location = response.getLocation() != null ? response.getLocation().toString() : "";
             if (!location.isEmpty()) {
