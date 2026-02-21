@@ -40,17 +40,21 @@ jobs:
         run: |
           docker run -d \
             --name keycloak \
-            --network host \
             -e KEYCLOAK_ADMIN=admin \
             -e KEYCLOAK_ADMIN_PASSWORD=admin \
             -e KC_HTTP_ENABLED=true \
             -p 8080:8080 \
             quay.io/keycloak/keycloak:24.0 \
-            start-dev
+            start-dev --hostname-strict=false
+          
+          # Check if container is running
+          sleep 10
+          docker ps | grep keycloak
+          docker logs keycloak | tail -20
           
           # Wait for Keycloak to be ready
           for i in {1..60}; do
-            if curl -f http://localhost:8080/health; then
+            if curl -sf http://localhost:8080/health; then
               echo "Keycloak is ready!"
               break
             fi
