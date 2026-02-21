@@ -85,8 +85,9 @@ public class AuthController {
 
             AccessTokenResponse tokenResponse = keycloak.tokenManager().getAccessToken();
             
-            // Sync user with local database
-            String keycloakId = keycloak.tokenManager().getAccessToken().getSubject();
+            // Sync user with local database - parse userId from token
+            String accessToken = tokenResponse.getToken();
+            String keycloakId = extractUserIdFromToken(accessToken);
             User user = userService.syncUserWithKeycloak(keycloakId);
             
             // Update last active
@@ -124,16 +125,8 @@ public class AuthController {
         try {
             logger.info("Refreshing access token");
             
-            // Use Keycloak's token endpoint to refresh
-            Keycloak keycloak = KeycloakBuilder.builder()
-                    .serverUrl(keycloakServerUrl)
-                    .realm(keycloakRealm)
-                    .clientId(frontendClientId)
-                    .grantType("refresh_token")
-                    .refreshToken(refreshToken)
-                    .build();
-
-            AccessTokenResponse tokenResponse = keycloak.tokenManager().refreshToken();
+            // Use Keycloak's token endpoint to refresh via REST call
+            AccessTokenResponse tokenResponse = refreshAccessToken(refreshToken);
             
             Map<String, Object> response = new HashMap<>();
             response.put("access_token", tokenResponse.getToken());
@@ -200,6 +193,62 @@ public class AuthController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Logout failed");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * Extract user ID from JWT token (sub claim)
+     */
+    private String extractUserIdFromToken(String accessToken) {
+        try {
+            // Simple JWT parsing - split by . and decode payload
+            String[] parts = accessToken.split("\\.");
+            if (parts.length >= 2) {
+                String payload = new String(java.util.Base64.getDecoder().decode(parts[1]));
+                // Extract sub claim using simple string parsing
+                int subIndex = payload.indexOf("\"sub\":");
+                if (subIndex >= 0) {
+                    int start = payload.indexOf("\"", subIndex + 6) + 1;
+                    int end = payload.indexOf("\"", start);
+                    return payload.substring(start, end);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to extract user ID from token", e);
+        }
+        return null;
+    }
+
+    /**
+     * Refresh access token using Keycloak token endpoint
+     */
+    private AccessTokenResponse refreshAccessToken(String refreshToken) {
+        try {
+            String tokenUrl = keycloakServerUrl + "/realms/" + keycloakRealm + "/protocol/openid-connect/token";
+            
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            String formData = "grant_type=refresh_token"
+                    + "&client_id=" + frontendClientId
+                    + "&refresh_token=" + java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
+            
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(tokenUrl))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(formData))
+                    .build();
+            
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                // Parse JSON response manually
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                return mapper.readValue(response.body(), AccessTokenResponse.class);
+            } else {
+                throw new RuntimeException("Token refresh failed: HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            logger.error("Failed to refresh token", e);
+            throw new RuntimeException("Token refresh failed", e);
         }
     }
 }

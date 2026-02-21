@@ -84,9 +84,8 @@ public class KeycloakInitService {
             realm.setDisplayName("Lazycord");
             realm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>Lazycord</span></div>");
             
-            // Token settings
+            // Token settings (access token lifespan only - refresh token handled by Keycloak defaults)
             realm.setAccessTokenLifespan(300); // 5 minutes
-            realm.setRefreshTokenLifespan(1800); // 30 minutes
             
             keycloakAdmin.realms().create(realm);
             logger.info("Realm '{}' created successfully", LAZYCORD_REALM);
