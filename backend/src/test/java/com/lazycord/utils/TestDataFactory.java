@@ -1,10 +1,12 @@
 package com.lazycord.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lazycord.dto.UserDto;
 import com.lazycord.dto.UserLoginRequest;
 import com.lazycord.dto.UserRegistrationRequest;
 import com.lazycord.model.User;
-import org.keycloak.representations.idm.UserRepresentation;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -16,6 +18,8 @@ import java.util.UUID;
  * Provides centralized test data creation for consistency across tests.
  */
 public class TestDataFactory {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Constants for test data
     public static final String TEST_USER_ID = "test-user-id-123";
@@ -95,28 +99,28 @@ public class TestDataFactory {
     }
 
     /**
-     * Creates a Keycloak UserRepresentation for testing.
+     * Creates a Keycloak user JsonNode for testing.
      */
-    public static UserRepresentation createKeycloakUser() {
-        UserRepresentation kcUser = new UserRepresentation();
-        kcUser.setId(TEST_KEYCLOAK_ID);
-        kcUser.setUsername(TEST_USERNAME);
-        kcUser.setEmail(TEST_EMAIL);
-        kcUser.setEmailVerified(true);
-        kcUser.setEnabled(true);
+    public static JsonNode createKeycloakUser() {
+        ObjectNode kcUser = objectMapper.createObjectNode();
+        kcUser.put("id", TEST_KEYCLOAK_ID);
+        kcUser.put("username", TEST_USERNAME);
+        kcUser.put("email", TEST_EMAIL);
+        kcUser.put("emailVerified", true);
+        kcUser.put("enabled", true);
         return kcUser;
     }
 
     /**
-     * Creates a Keycloak UserRepresentation with custom values.
+     * Creates a Keycloak user JsonNode with custom values.
      */
-    public static UserRepresentation createKeycloakUser(String id, String username, String email) {
-        UserRepresentation kcUser = new UserRepresentation();
-        kcUser.setId(id);
-        kcUser.setUsername(username);
-        kcUser.setEmail(email);
-        kcUser.setEmailVerified(true);
-        kcUser.setEnabled(true);
+    public static JsonNode createKeycloakUser(String id, String username, String email) {
+        ObjectNode kcUser = objectMapper.createObjectNode();
+        kcUser.put("id", id);
+        kcUser.put("username", username);
+        kcUser.put("email", email);
+        kcUser.put("emailVerified", true);
+        kcUser.put("enabled", true);
         return kcUser;
     }
 
