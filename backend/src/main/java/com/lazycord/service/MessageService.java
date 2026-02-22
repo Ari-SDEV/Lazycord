@@ -1,0 +1,73 @@
+package com.lazycord.service;
+
+import com.lazycord.model.Channel;
+import com.lazycord.model.Message;
+import com.lazycord.model.User;
+import com.lazycord.repository.MessageRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class MessageService {
+
+    private final MessageRepository messageRepository;
+
+    @Transactional
+    public Message saveMessage(String content, User sender, Channel channel) {
+        Message message = new Message();
+        message.setContent(content);
+        message.setSender(sender);
+        message.setChannel(channel);
+        message.setType(Message.MessageType.TEXT);
+
+        return messageRepository.save(message);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Message> getChannelMessages(UUID channelId) {
+        Channel channel = new Channel();
+        channel.setId(channelId);
+        return messageRepository.findByChannelOrderByCreatedAtAsc(channel);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Message> getChannelMessagesRecent(UUID channelId) {
+        Channel channel = new Channel();
+        channel.setId(channelId);
+        return messageRepository.findTop50ByChannelOrderByCreatedAtDesc(channel);
+    }
+
+    @Transactional
+    public Message editMessage(UUID messageId, String newContent, User editor) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        if (!message.getSender().getId().equals(editor.getId())) {
+            throw new RuntimeException("Not authorized to edit this message");
+        }
+
+        message.setContent(newContent);
+        message.setEdited(true);
+
+        return messageRepository.save(message);
+    }
+
+    @Transactional
+    public void deleteMessage(UUID messageId, User deleter) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        if (!message.getSender().getId().equals(deleter.getId())) {
+            throw new RuntimeException("Not authorized to delete this message");
+        }
+
+        messageRepository.delete(message);
+    }
+}
