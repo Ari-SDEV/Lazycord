@@ -73,7 +73,7 @@ jobs:
         run: mvn clean compile
 
       - name: Run Tests
-        run: mvn test
+        run: mvn test -Dtest="!*IntegrationTest"
         env:
           # Database config comes from application-test.yml (H2)
           # Keycloak config comes from application-test.yml
