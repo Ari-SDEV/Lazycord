@@ -36,32 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Keycloak
-        run: |
-          docker run -d \
-            --name keycloak \
-            -e KEYCLOAK_ADMIN=admin \
-            -e KEYCLOAK_ADMIN_PASSWORD=admin \
-            -e KC_HTTP_ENABLED=true \
-            -p 8080:8080 \
-            quay.io/keycloak/keycloak:24.0 \
-            start-dev --hostname-strict=false
-          
-          # Check if container is running
-          sleep 10
-          docker ps | grep keycloak
-          docker logs keycloak | tail -20
-          
-          # Wait for Keycloak to be ready
-          for i in {1..60}; do
-            if curl -sf http://localhost:8080/health; then
-              echo "Keycloak is ready!"
-              break
-            fi
-            echo "Waiting for Keycloak... ($i/60)"
-            sleep 2
-          done
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -73,13 +47,10 @@ jobs:
         run: mvn clean compile
 
       - name: Run Tests
-        run: mvn test -Dtest="!*IntegrationTest"
+        run: mvn test
         env:
-          # Database config comes from application-test.yml (H2)
-          # Keycloak config comes from application-test.yml
           SPRING_REDIS_HOST: localhost
           SPRING_REDIS_PORT: 6379
-          KEYCLOAK_AUTH_SERVER_URL: http://localhost:8080
 
       - name: Package Application
         run: mvn package -DskipTests

@@ -36,7 +36,8 @@ public class KeycloakInitService {
     private static final String BACKEND_CLIENT_ID = "lazycord-backend";
     private static final String FRONTEND_CLIENT_ID = "lazycord-frontend";
 
-    @PostConstruct
+    // Removed @PostConstruct - initialization is now on-demand
+    // Call initialize() explicitly when Keycloak is needed
     public void initialize() {
         try {
             logger.info("Initializing Keycloak realm and configuration...");
