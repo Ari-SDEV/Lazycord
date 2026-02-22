@@ -1,30 +1,22 @@
 package com.lazycord.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.RoleMappingResource;
-import org.keycloak.admin.client.resource.RoleResource;
-import org.keycloak.admin.client.resource.RoleScopeResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
-import java.net.URI;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,330 +25,248 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for KeycloakUserService.
- * Tests user CRUD operations and password management in Keycloak.
+ * Unit tests for KeycloakUserService using WebClient.
  */
 @ExtendWith(MockitoExtension.class)
-@Disabled("Tests need refactoring - see issue #39")
 class KeycloakUserServiceTest {
 
     @Mock
-    private Keycloak keycloakAdmin;
+    private WebClient.Builder webClientBuilder;
 
     @Mock
-    private RealmsResource realmsResource;
+    private KeycloakTokenService keycloakTokenService;
 
     @Mock
-    private RealmResource realmResource;
+    private WebClient webClient;
 
     @Mock
-    private UsersResource usersResource;
+    private WebClient.RequestBodyUriSpec requestBodyUriSpec;
 
     @Mock
-    private UserResource userResource;
+    private WebClient.RequestBodySpec requestBodySpec;
 
     @Mock
-    private RolesResource rolesResource;
+    private WebClient.RequestHeadersSpec requestHeadersSpec;
 
     @Mock
-    private RoleResource roleResource;
+    private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
 
     @Mock
-    private RoleMappingResource roleMappingResource;
-
-    @Mock
-    private RoleScopeResource roleScopeResource;
+    private WebClient.ResponseSpec responseSpec;
 
     @InjectMocks
     private KeycloakUserService keycloakUserService;
 
-    private static final String TEST_KEYCLOAK_ID = "test-keycloak-id-123";
-    private static final String TEST_USERNAME = "testuser";
-    private static final String TEST_EMAIL = "test@example.com";
-    private static final String TEST_PASSWORD = "password123";
-    private static final String REALM_NAME = "lazycord";
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final String TEST_REALM = "lazycord";
+    private static final String TEST_BASE_URL = "http://localhost:8080";
+    private static final String TEST_ADMIN_TOKEN = "test-admin-token";
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(keycloakUserService, "keycloakServerUrl", "http://localhost:8080");
-        ReflectionTestUtils.setField(keycloakUserService, "keycloakRealm", REALM_NAME);
-        ReflectionTestUtils.setField(keycloakUserService, "adminUsername", "admin");
-        ReflectionTestUtils.setField(keycloakUserService, "adminPassword", "admin");
-        ReflectionTestUtils.setField(keycloakUserService, "adminClientId", "admin-cli");
-        ReflectionTestUtils.setField(keycloakUserService, "adminRealm", "master");
-        ReflectionTestUtils.setField(keycloakUserService, "keycloakAdmin", keycloakAdmin);
+        ReflectionTestUtils.setField(keycloakUserService, "baseUrl", TEST_BASE_URL);
+        ReflectionTestUtils.setField(keycloakUserService, "realm", TEST_REALM);
+        ReflectionTestUtils.setField(keycloakUserService, "clientId", "lazycord-backend");
+
+        when(webClientBuilder.baseUrl(anyString())).thenReturn(webClientBuilder);
+        when(webClientBuilder.build()).thenReturn(webClient);
     }
 
     @Test
-    void testCreateUser() {
+    void createUser_Success() {
         // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(Collections.emptyList());
-        when(usersResource.searchByEmail(TEST_EMAIL, true)).thenReturn(Collections.emptyList());
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(TEST_ADMIN_TOKEN);
 
-        // Create success response with Location header
-        Response successResponse = Response.status(201)
-                .location(URI.create("http://localhost:8080/admin/realms/lazycord/users/" + TEST_KEYCLOAK_ID))
-                .build();
-        when(usersResource.create(any(UserRepresentation.class))).thenReturn(successResponse);
+        String username = "testuser";
+        String email = "test@example.com";
+        String password = "password123";
+        String role = "user";
+        String firstName = "Test";
+        String lastName = "User";
+        String userId = "test-user-id-123";
+
+        // Mock the POST request to create user
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.empty());
+
+        // Mock the GET request to find created user
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
+        ObjectNode user = objectMapper.createObjectNode();
+        user.put("id", userId);
+        user.put("username", username);
+        
+        ArrayNode users = objectMapper.createArrayNode();
+        users.add(user);
+        
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.just(users));
+
+        // Mock password reset (PUT request)
+        when(webClient.put()).thenReturn(requestBodyUriSpec);
+
+        // Mock role assignment (GET then POST)
+        when(requestBodyUriSpec.uri(contains("/roles/"))).thenReturn(requestBodySpec);
+        when(requestHeadersUriSpec.uri(contains("/roles/"))).thenReturn(requestHeadersSpec);
+        
+        ObjectNode role = objectMapper.createObjectNode();
+        role.put("id", "role-id-123");
+        role.put("name", role);
+        
+        when(responseSpec.bodyToMono(JsonNode.class))
+            .thenReturn(Mono.just(users))  // First call for user search
+            .thenReturn(Mono.just(role));    // Second call for role
 
         // Act
-        String result = keycloakUserService.createUser(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, List.of("user"));
+        String result = keycloakUserService.createUser(username, email, password, role, firstName, lastName);
+
+        // Assert
+        assertEquals(userId, result);
+    }
+
+    @Test
+    void createUser_NoServiceAccountToken() {
+        // Arrange
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(null);
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            keycloakUserService.createUser("test", "test@test.com", "password", "user", "Test", "User");
+        });
+        assertTrue(exception.getMessage().contains("Service account not configured"));
+    }
+
+    @Test
+    void getUserById_Success() {
+        // Arrange
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(TEST_ADMIN_TOKEN);
+
+        String userId = "test-user-id";
+        String username = "testuser";
+        
+        // Mock GET request
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
+        ObjectNode user = objectMapper.createObjectNode();
+        user.put("id", userId);
+        user.put("username", username);
+        
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.just(user));
+
+        // Act
+        JsonNode result = keycloakUserService.getUserById(userId);
 
         // Assert
         assertNotNull(result);
-        assertEquals(TEST_KEYCLOAK_ID, result);
-        verify(usersResource).create(any(UserRepresentation.class));
+        assertEquals(userId, result.get("id").asText());
+        assertEquals(username, result.get("username").asText());
     }
 
     @Test
-    void testCreateUser_DuplicateUsername() {
+    void findUserIdByUsername_Success() {
         // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(TEST_ADMIN_TOKEN);
 
-        UserRepresentation existingUser = new UserRepresentation();
-        existingUser.setUsername(TEST_USERNAME);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(List.of(existingUser));
+        String username = "testuser";
+        String userId = "test-user-id";
+        
+        // Mock GET request
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
+        ObjectNode user = objectMapper.createObjectNode();
+        user.put("id", userId);
+        user.put("username", username);
+        
+        ArrayNode users = objectMapper.createArrayNode();
+        users.add(user);
+        
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.just(users));
 
         // Act
-        String result = keycloakUserService.createUser(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, List.of("user"));
+        String result = keycloakUserService.findUserIdByUsername(username);
 
         // Assert
-        assertNull(result);
-        verify(usersResource, never()).create(any(UserRepresentation.class));
+        assertEquals(userId, result);
     }
 
     @Test
-    void testCreateUser_DuplicateEmail() {
+    void findUserIdByUsername_NotFound() {
         // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(Collections.emptyList());
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(TEST_ADMIN_TOKEN);
 
-        UserRepresentation existingUser = new UserRepresentation();
-        existingUser.setEmail(TEST_EMAIL);
-        when(usersResource.searchByEmail(TEST_EMAIL, true)).thenReturn(List.of(existingUser));
+        // Mock GET request - empty array
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
+        ArrayNode emptyUsers = objectMapper.createArrayNode();
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.just(emptyUsers));
 
         // Act
-        String result = keycloakUserService.createUser(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, List.of("user"));
-
-        // Assert
-        assertNull(result);
-        verify(usersResource, never()).create(any(UserRepresentation.class));
-    }
-
-    @Test
-    void testCreateUser_FailedResponse() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(Collections.emptyList());
-        when(usersResource.searchByEmail(TEST_EMAIL, true)).thenReturn(Collections.emptyList());
-
-        // Create failed response
-        Response failedResponse = Response.status(400).build();
-        when(usersResource.create(any(UserRepresentation.class))).thenReturn(failedResponse);
-
-        // Act
-        String result = keycloakUserService.createUser(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, List.of("user"));
+        String result = keycloakUserService.findUserIdByUsername("nonexistent");
 
         // Assert
         assertNull(result);
     }
 
     @Test
-    void testGetUserById() {
+    void getUserRealmRoles_Success() {
         // Arrange
-        UserRepresentation userRepresentation = new UserRepresentation();
-        userRepresentation.setId(TEST_KEYCLOAK_ID);
-        userRepresentation.setUsername(TEST_USERNAME);
-        userRepresentation.setEmail(TEST_EMAIL);
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(TEST_ADMIN_TOKEN);
 
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        when(userResource.toRepresentation()).thenReturn(userRepresentation);
+        String userId = "test-user-id";
+        
+        // Mock GET request
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
+        ObjectNode adminRole = objectMapper.createObjectNode();
+        adminRole.put("name", "admin");
+        
+        ObjectNode userRole = objectMapper.createObjectNode();
+        userRole.put("name", "user");
+        
+        ArrayNode roles = objectMapper.createArrayNode();
+        roles.add(adminRole);
+        roles.add(userRole);
+        
+        when(responseSpec.bodyToMono(JsonNode.class)).thenReturn(Mono.just(roles));
 
         // Act
-        Optional<UserRepresentation> result = keycloakUserService.getUserById(TEST_KEYCLOAK_ID);
+        List<String> result = keycloakUserService.getUserRealmRoles(userId);
 
         // Assert
-        assertTrue(result.isPresent());
-        assertEquals(TEST_KEYCLOAK_ID, result.get().getId());
-        assertEquals(TEST_USERNAME, result.get().getUsername());
+        assertEquals(2, result.size());
+        assertTrue(result.contains("admin"));
+        assertTrue(result.contains("user"));
     }
 
     @Test
-    void testGetUserById_NotFound() {
+    void getUserRealmRoles_NoToken() {
         // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        when(userResource.toRepresentation()).thenThrow(new NotFoundException("User not found"));
+        when(keycloakTokenService.getServiceAccountToken()).thenReturn(null);
 
         // Act
-        Optional<UserRepresentation> result = keycloakUserService.getUserById(TEST_KEYCLOAK_ID);
+        List<String> result = keycloakUserService.getUserRealmRoles("test-user-id");
 
         // Assert
         assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetUserByUsername() {
-        // Arrange
-        UserRepresentation userRepresentation = new UserRepresentation();
-        userRepresentation.setId(TEST_KEYCLOAK_ID);
-        userRepresentation.setUsername(TEST_USERNAME);
-
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(List.of(userRepresentation));
-
-        // Act
-        Optional<UserRepresentation> result = keycloakUserService.getUserByUsername(TEST_USERNAME);
-
-        // Assert
-        assertTrue(result.isPresent());
-        assertEquals(TEST_USERNAME, result.get().getUsername());
-    }
-
-    @Test
-    void testGetUserByUsername_NotFound() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByUsername(TEST_USERNAME, true)).thenReturn(Collections.emptyList());
-
-        // Act
-        Optional<UserRepresentation> result = keycloakUserService.getUserByUsername(TEST_USERNAME);
-
-        // Assert
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testUpdateUser() {
-        // Arrange
-        UserRepresentation existingUser = new UserRepresentation();
-        existingUser.setId(TEST_KEYCLOAK_ID);
-        existingUser.setUsername(TEST_USERNAME);
-        existingUser.setEmail("old@example.com");
-
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        when(userResource.toRepresentation()).thenReturn(existingUser);
-
-        // Act
-        boolean result = keycloakUserService.updateUser(
-                TEST_KEYCLOAK_ID, "new@example.com", true);
-
-        // Assert
-        assertTrue(result);
-        verify(userResource).update(any(UserRepresentation.class));
-    }
-
-    @Test
-    void testUpdateUser_Failure() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        when(userResource.toRepresentation()).thenThrow(new NotFoundException("User not found"));
-
-        // Act
-        boolean result = keycloakUserService.updateUser(
-                TEST_KEYCLOAK_ID, "new@example.com", true);
-
-        // Assert
-        assertFalse(result);
-    }
-
-    @Test
-    void testDeleteUser() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        doNothing().when(userResource).remove();
-
-        // Act
-        boolean result = keycloakUserService.deleteUser(TEST_KEYCLOAK_ID);
-
-        // Assert
-        assertTrue(result);
-        verify(userResource).remove();
-    }
-
-    @Test
-    void testDeleteUser_Failure() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        doThrow(new NotFoundException("User not found")).when(userResource).remove();
-
-        // Act
-        boolean result = keycloakUserService.deleteUser(TEST_KEYCLOAK_ID);
-
-        // Assert
-        assertFalse(result);
-    }
-
-    @Test
-    void testResetPassword() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        doNothing().when(userResource).resetPassword(any(CredentialRepresentation.class));
-
-        // Act
-        boolean result = keycloakUserService.resetPassword(TEST_KEYCLOAK_ID, "newpassword123");
-
-        // Assert
-        assertTrue(result);
-        verify(userResource).resetPassword(any(CredentialRepresentation.class));
-    }
-
-    @Test
-    void testResetPassword_Failure() {
-        // Arrange
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.get(TEST_KEYCLOAK_ID)).thenReturn(userResource);
-        doThrow(new NotFoundException("User not found"))
-                .when(userResource).resetPassword(any(CredentialRepresentation.class));
-
-        // Act
-        boolean result = keycloakUserService.resetPassword(TEST_KEYCLOAK_ID, "newpassword123");
-
-        // Assert
-        assertFalse(result);
-    }
-
-    @Test
-    void testGetUserByEmail() {
-        // Arrange
-        UserRepresentation userRepresentation = new UserRepresentation();
-        userRepresentation.setId(TEST_KEYCLOAK_ID);
-        userRepresentation.setEmail(TEST_EMAIL);
-
-        when(keycloakAdmin.realm(REALM_NAME)).thenReturn(realmResource);
-        when(realmResource.users()).thenReturn(usersResource);
-        when(usersResource.searchByEmail(TEST_EMAIL, true)).thenReturn(List.of(userRepresentation));
-
-        // Act
-        Optional<UserRepresentation> result = keycloakUserService.getUserByEmail(TEST_EMAIL);
-
-        // Assert
-        assertTrue(result.isPresent());
-        assertEquals(TEST_EMAIL, result.get().getEmail());
     }
 }

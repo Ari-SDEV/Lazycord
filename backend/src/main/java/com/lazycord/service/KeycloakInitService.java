@@ -1,24 +1,35 @@
 package com.lazycord.service;
 
-import jakarta.annotation.PostConstruct;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.representations.idm.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.*;
+import jakarta.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class KeycloakInitService {
 
-    private static final Logger logger = LoggerFactory.getLogger(KeycloakInitService.class);
+    private final WebClient.Builder webClientBuilder;
+    private final KeycloakTokenService keycloakTokenService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${keycloak.auth-server-url:http://localhost:8080}")
-    private String keycloakServerUrl;
+    private String baseUrl;
+
+    @Value("${keycloak.realm:master}")
+    private String adminRealm;
 
     @Value("${keycloak.admin-username:admin}")
     private String adminUsername;
@@ -26,244 +37,410 @@ public class KeycloakInitService {
     @Value("${keycloak.admin-password:admin}")
     private String adminPassword;
 
-    @Value("${keycloak.realm:master}")
-    private String adminRealm;
-
-    @Value("${keycloak.resource:admin-cli}")
-    private String adminClientId;
-
     private static final String LAZYCORD_REALM = "lazycord";
     private static final String BACKEND_CLIENT_ID = "lazycord-backend";
     private static final String FRONTEND_CLIENT_ID = "lazycord-frontend";
 
-    // Removed @PostConstruct - initialization is now on-demand
-    // Call initialize() explicitly when Keycloak is needed
+    private WebClient getWebClient() {
+        return webClientBuilder.baseUrl(baseUrl).build();
+    }
+
+    @PostConstruct
     public void initialize() {
         try {
-            logger.info("Initializing Keycloak realm and configuration...");
+            log.info("Initializing Keycloak realm and configuration...");
             
-            Keycloak keycloakAdmin = buildKeycloakAdmin();
-            if (keycloakAdmin == null) {
-                logger.warn("Keycloak admin client not available, skipping initialization");
+            // Get admin token first
+            String adminToken = getAdminToken();
+            if (adminToken == null) {
+                log.warn("Could not get admin token, skipping Keycloak initialization");
                 return;
             }
 
-            // Create or update realm
-            createRealmIfNotExists(keycloakAdmin);
-
-            // Get realm resource
-            RealmResource realmResource = keycloakAdmin.realm(LAZYCORD_REALM);
+            // Create realm
+            createRealmIfNotExists(adminToken);
 
             // Create roles
-            createRolesIfNotExists(realmResource);
+            createRolesIfNotExists(adminToken);
 
             // Create clients
-            createBackendClientIfNotExists(realmResource);
-            createFrontendClientIfNotExists(realmResource);
+            createBackendClientIfNotExists(adminToken);
+            createFrontendClientIfNotExists(adminToken);
 
             // Create default users
-            createDefaultUsersIfNotExists(realmResource);
+            createDefaultUsersIfNotExists(adminToken);
 
-            logger.info("Keycloak initialization completed successfully");
+            log.info("Keycloak initialization completed successfully");
         } catch (Exception e) {
-            logger.error("Failed to initialize Keycloak: {}", e.getMessage(), e);
+            log.error("Failed to initialize Keycloak: {}", e.getMessage(), e);
         }
     }
-    
-    /**
-     * Build Keycloak admin client. Overrideable for testing.
-     */
-    protected Keycloak buildKeycloakAdmin() {
-        return KeycloakBuilder.builder()
-                .serverUrl(keycloakServerUrl)
-                .realm(adminRealm)
-                .clientId(adminClientId)
-                .username(adminUsername)
-                .password(adminPassword)
-                .build();
-    }
 
-    private void createRealmIfNotExists(Keycloak keycloakAdmin) {
+    private String getAdminToken() {
+        String tokenUrl = baseUrl + "/realms/master/protocol/openid-connect/token";
+        
+        String formData = String.format(
+            "grant_type=password&client_id=admin-cli&username=%s&password=%s",
+            adminUsername, adminPassword
+        );
+
         try {
-            keycloakAdmin.realm(LAZYCORD_REALM).toRepresentation();
-            logger.info("Realm '{}' already exists, skipping creation", LAZYCORD_REALM);
+            JsonNode response = getWebClient()
+                .post()
+                .uri(tokenUrl)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromValue(formData))
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+
+            if (response != null && response.has("access_token")) {
+                return response.get("access_token").asText();
+            }
         } catch (Exception e) {
-            logger.info("Creating realm '{}'", LAZYCORD_REALM);
-            
-            RealmRepresentation realm = new RealmRepresentation();
-            realm.setRealm(LAZYCORD_REALM);
-            realm.setEnabled(true);
-            realm.setDisplayName("Lazycord");
-            realm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>Lazycord</span></div>");
-            
-            // Token settings (access token lifespan only - refresh token handled by Keycloak defaults)
-            realm.setAccessTokenLifespan(300); // 5 minutes
-            
-            keycloakAdmin.realms().create(realm);
-            logger.info("Realm '{}' created successfully", LAZYCORD_REALM);
+            log.error("Failed to get admin token: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private void createRealmIfNotExists(String adminToken) {
+        // Check if realm exists
+        String realmUrl = "/admin/realms/" + LAZYCORD_REALM;
+        
+        try {
+            getWebClient()
+                .get()
+                .uri(baseUrl + realmUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            log.info("Realm '{}' already exists", LAZYCORD_REALM);
+            return;
+        } catch (Exception e) {
+            // Realm doesn't exist, create it
+        }
+
+        // Create realm
+        ObjectNode realm = objectMapper.createObjectNode();
+        realm.put("realm", LAZYCORD_REALM);
+        realm.put("enabled", true);
+        realm.put("displayName", "Lazycord");
+        realm.put("displayNameHtml", "<div class='kc-logo-text'><span>Lazycord</span></div>");
+        realm.put("accessTokenLifespan", 300); // 5 minutes
+
+        try {
+            getWebClient()
+                .post()
+                .uri(baseUrl + "/admin/realms")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(realm))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            log.info("Realm '{}' created successfully", LAZYCORD_REALM);
+        } catch (Exception e) {
+            log.error("Failed to create realm: {}", e.getMessage());
         }
     }
 
-    private void createRolesIfNotExists(RealmResource realmResource) {
+    private void createRolesIfNotExists(String adminToken) {
         String[] roles = {"admin", "moderator", "user"};
         
         for (String roleName : roles) {
+            // Check if role exists
+            String roleUrl = "/admin/realms/%s/roles/%s".formatted(LAZYCORD_REALM, roleName);
+            
             try {
-                realmResource.roles().get(roleName).toRepresentation();
-                logger.info("Role '{}' already exists", roleName);
+                getWebClient()
+                    .get()
+                    .uri(baseUrl + roleUrl)
+                    .header("Authorization", "Bearer " + adminToken)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+                log.info("Role '{}' already exists", roleName);
+                continue;
             } catch (Exception e) {
-                logger.info("Creating role '{}'", roleName);
-                
-                RoleRepresentation role = new RoleRepresentation();
-                role.setName(roleName);
-                role.setDescription("Lazycord " + roleName + " role");
-                
-                realmResource.roles().create(role);
-                logger.info("Role '{}' created successfully", roleName);
+                // Role doesn't exist
+            }
+
+            // Create role
+            ObjectNode role = objectMapper.createObjectNode();
+            role.put("name", roleName);
+            role.put("description", "Lazycord " + roleName + " role");
+
+            try {
+                getWebClient()
+                    .post()
+                    .uri(baseUrl + "/admin/realms/%s/roles".formatted(LAZYCORD_REALM))
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(role))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+                log.info("Role '{}' created", roleName);
+            } catch (Exception e) {
+                log.error("Failed to create role '{}': {}", roleName, e.getMessage());
             }
         }
     }
 
-    private void createBackendClientIfNotExists(RealmResource realmResource) {
-        try {
-            realmResource.clients().get(BACKEND_CLIENT_ID).toRepresentation();
-            logger.info("Client '{}' already exists", BACKEND_CLIENT_ID);
-        } catch (Exception e) {
-            logger.info("Creating backend client '{}'", BACKEND_CLIENT_ID);
-            
-            ClientRepresentation client = new ClientRepresentation();
-            client.setClientId(BACKEND_CLIENT_ID);
-            client.setName("Lazycord Backend");
-            client.setDescription("Confidential client for Lazycord backend API");
-            client.setProtocol("openid-connect");
-            client.setPublicClient(false);
-            client.setBearerOnly(false);
-            client.setServiceAccountsEnabled(true);
-            client.setAuthorizationServicesEnabled(true);
-            client.setDirectAccessGrantsEnabled(true);
-            client.setStandardFlowEnabled(true);
-            client.setRedirectUris(Arrays.asList("http://localhost:8080/*", "http://localhost:3000/*"));
-            client.setWebOrigins(Arrays.asList("+", "http://localhost:3000", "http://localhost:8080"));
-            
-            realmResource.clients().create(client);
-            
-            // Assign manage-users role to service account
-            String serviceAccountId = realmResource.clients().findByClientId(BACKEND_CLIENT_ID)
-                    .stream().findFirst().map(ClientRepresentation::getId).orElse(null);
-            
-            if (serviceAccountId != null) {
-                RoleRepresentation manageUsersRole = realmResource.roles().get("admin").toRepresentation();
-                realmResource.users().get(serviceAccountId).roles().realmLevel().add(Arrays.asList(manageUsersRole));
-            }
-            
-            logger.info("Backend client '{}' created successfully", BACKEND_CLIENT_ID);
-        }
-    }
-
-    private void createFrontendClientIfNotExists(RealmResource realmResource) {
-        try {
-            realmResource.clients().get(FRONTEND_CLIENT_ID).toRepresentation();
-            logger.info("Client '{}' already exists", FRONTEND_CLIENT_ID);
-        } catch (Exception e) {
-            logger.info("Creating frontend client '{}'", FRONTEND_CLIENT_ID);
-            
-            ClientRepresentation client = new ClientRepresentation();
-            client.setClientId(FRONTEND_CLIENT_ID);
-            client.setName("Lazycord Frontend");
-            client.setDescription("Public client for Lazycord frontend");
-            client.setProtocol("openid-connect");
-            client.setPublicClient(true);
-            client.setBearerOnly(false);
-            client.setStandardFlowEnabled(true);
-            client.setDirectAccessGrantsEnabled(true);
-            client.setRedirectUris(Arrays.asList(
-                "http://localhost:3000/*",
-                "http://localhost:1420/*",
-                "tauri://localhost/*"
-            ));
-            client.setWebOrigins(Arrays.asList("+", "http://localhost:3000"));
-            
-            realmResource.clients().create(client);
-            logger.info("Frontend client '{}' created successfully", FRONTEND_CLIENT_ID);
-        }
-    }
-
-    private void createDefaultUsersIfNotExists(RealmResource realmResource) {
-        // Create admin user
-        createUserIfNotExists(realmResource, "admin", "admin123", "admin@lazycord.local", 
-                Arrays.asList("admin", "moderator", "user"));
+    private void createBackendClientIfNotExists(String adminToken) {
+        // Check if client exists
+        String clientsUrl = "/admin/realms/%s/clients?clientId=%s".formatted(LAZYCORD_REALM, BACKEND_CLIENT_ID);
         
-        // Create moderator user
-        createUserIfNotExists(realmResource, "moderator", "mod123", "moderator@lazycord.local", 
-                Arrays.asList("moderator", "user"));
-        
-        // Create regular user
-        createUserIfNotExists(realmResource, "user", "user123", "user@lazycord.local", 
-                Arrays.asList("user"));
-    }
-
-    private void createUserIfNotExists(RealmResource realmResource, String username, 
-            String password, String email, List<String> roleNames) {
         try {
-            List<org.keycloak.representations.idm.UserRepresentation> users = 
-                    realmResource.users().searchByUsername(username, true);
+            JsonNode clients = getWebClient()
+                .get()
+                .uri(baseUrl + clientsUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
             
-            if (users != null && !users.isEmpty()) {
-                logger.info("User '{}' already exists", username);
+            if (clients != null && clients.isArray() && clients.size() > 0) {
+                log.info("Client '{}' already exists", BACKEND_CLIENT_ID);
                 return;
             }
-            
-            logger.info("Creating user '{}' with roles {}", username, roleNames);
-            
-            org.keycloak.representations.idm.UserRepresentation user = 
-                    new org.keycloak.representations.idm.UserRepresentation();
-            user.setUsername(username);
-            user.setEmail(email);
-            user.setEmailVerified(true);
-            user.setEnabled(true);
-            
-            // Set password
-            CredentialRepresentation credential = new CredentialRepresentation();
-            credential.setType(CredentialRepresentation.PASSWORD);
-            credential.setValue(password);
-            credential.setTemporary(false);
-            user.setCredentials(Arrays.asList(credential));
-            
-            // Create user
-            var response = realmResource.users().create(user);
-            String userId = extractUserId(response);
-            
-            if (userId != null) {
-                // Assign roles
-                List<RoleRepresentation> rolesToAssign = new ArrayList<>();
-                for (String roleName : roleNames) {
-                    try {
-                        RoleRepresentation role = realmResource.roles().get(roleName).toRepresentation();
-                        rolesToAssign.add(role);
-                    } catch (Exception ex) {
-                        logger.warn("Role '{}' not found", roleName);
-                    }
-                }
-                
-                if (!rolesToAssign.isEmpty()) {
-                    realmResource.users().get(userId).roles().realmLevel().add(rolesToAssign);
-                }
-                
-                logger.info("User '{}' created successfully with roles {}", username, roleNames);
-            }
-            
         } catch (Exception e) {
-            logger.error("Failed to create user '{}': {}", username, e.getMessage());
+            // Error checking
+        }
+
+        // Create client
+        ObjectNode client = objectMapper.createObjectNode();
+        client.put("clientId", BACKEND_CLIENT_ID);
+        client.put("name", "Lazycord Backend");
+        client.put("description", "Confidential client for Lazycord backend API");
+        client.put("protocol", "openid-connect");
+        client.put("publicClient", false);
+        client.put("bearerOnly", false);
+        client.put("serviceAccountsEnabled", true);
+        client.put("authorizationServicesEnabled", true);
+        client.put("directAccessGrantsEnabled", true);
+        client.put("standardFlowEnabled", true);
+        
+        ArrayNode redirectUris = objectMapper.createArrayNode();
+        redirectUris.add("http://localhost:8080/*");
+        redirectUris.add("http://localhost:3000/*");
+        client.set("redirectUris", redirectUris);
+        
+        ArrayNode webOrigins = objectMapper.createArrayNode();
+        webOrigins.add("+");
+        webOrigins.add("http://localhost:3000");
+        webOrigins.add("http://localhost:8080");
+        client.set("webOrigins", webOrigins);
+
+        try {
+            getWebClient()
+                .post()
+                .uri(baseUrl + "/admin/realms/%s/clients".formatted(LAZYCORD_REALM))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(client))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            log.info("Backend client '{}' created", BACKEND_CLIENT_ID);
+        } catch (Exception e) {
+            log.error("Failed to create backend client: {}", e.getMessage());
         }
     }
 
-    private String extractUserId(jakarta.ws.rs.core.Response response) {
-        if (response.getStatus() == 201) {
-            String location = response.getLocation() != null ? response.getLocation().toString() : "";
-            if (!location.isEmpty()) {
-                return location.substring(location.lastIndexOf('/') + 1);
+    private void createFrontendClientIfNotExists(String adminToken) {
+        // Check if client exists
+        String clientsUrl = "/admin/realms/%s/clients?clientId=%s".formatted(LAZYCORD_REALM, FRONTEND_CLIENT_ID);
+        
+        try {
+            JsonNode clients = getWebClient()
+                .get()
+                .uri(baseUrl + clientsUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+            
+            if (clients != null && clients.isArray() && clients.size() > 0) {
+                log.info("Client '{}' already exists", FRONTEND_CLIENT_ID);
+                return;
             }
+        } catch (Exception e) {
+            // Error checking
         }
-        return null;
+
+        // Create client
+        ObjectNode client = objectMapper.createObjectNode();
+        client.put("clientId", FRONTEND_CLIENT_ID);
+        client.put("name", "Lazycord Frontend");
+        client.put("description", "Public client for Lazycord frontend");
+        client.put("protocol", "openid-connect");
+        client.put("publicClient", true);
+        client.put("bearerOnly", false);
+        client.put("standardFlowEnabled", true);
+        client.put("directAccessGrantsEnabled", true);
+        
+        ArrayNode redirectUris = objectMapper.createArrayNode();
+        redirectUris.add("http://localhost:3000/*");
+        redirectUris.add("http://localhost:1420/*");
+        redirectUris.add("tauri://localhost/*");
+        client.set("redirectUris", redirectUris);
+        
+        ArrayNode webOrigins = objectMapper.createArrayNode();
+        webOrigins.add("+");
+        webOrigins.add("http://localhost:3000");
+        client.set("webOrigins", webOrigins);
+
+        try {
+            getWebClient()
+                .post()
+                .uri(baseUrl + "/admin/realms/%s/clients".formatted(LAZYCORD_REALM))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(client))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+            log.info("Frontend client '{}' created", FRONTEND_CLIENT_ID);
+        } catch (Exception e) {
+            log.error("Failed to create frontend client: {}", e.getMessage());
+        }
+    }
+
+    private void createDefaultUsersIfNotExists(String adminToken) {
+        // Create admin user
+        createUserIfNotExists(adminToken, "admin", "admin123", "admin@lazycord.local", 
+                List.of("admin", "moderator", "user"));
+        
+        // Create moderator user
+        createUserIfNotExists(adminToken, "moderator", "mod123", "moderator@lazycord.local", 
+                List.of("moderator", "user"));
+        
+        // Create regular user
+        createUserIfNotExists(adminToken, "user", "user123", "user@lazycord.local", 
+                List.of("user"));
+    }
+
+    private void createUserIfNotExists(String adminToken, String username, String password, 
+            String email, List<String> roleNames) {
+        // Check if user exists
+        String usersUrl = "/admin/realms/%s/users?username=%s&exact=true".formatted(LAZYCORD_REALM, username);
+        
+        try {
+            JsonNode users = getWebClient()
+                .get()
+                .uri(baseUrl + usersUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+            
+            if (users != null && users.isArray() && users.size() > 0) {
+                log.info("User '{}' already exists", username);
+                return;
+            }
+        } catch (Exception e) {
+            // Error checking
+        }
+
+        // Create user
+        ObjectNode user = objectMapper.createObjectNode();
+        user.put("username", username);
+        user.put("email", email);
+        user.put("emailVerified", true);
+        user.put("enabled", true);
+        
+        // Password credentials
+        ObjectNode credential = objectMapper.createObjectNode();
+        credential.put("type", "password");
+        credential.put("value", password);
+        credential.put("temporary", false);
+        ArrayNode credentials = objectMapper.createArrayNode();
+        credentials.add(credential);
+        user.set("credentials", credentials);
+
+        String userId = null;
+        try {
+            JsonNode response = getWebClient()
+                .post()
+                .uri(baseUrl + "/admin/realms/%s/users".formatted(LAZYCORD_REALM))
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(user))
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+            
+            log.info("User '{}' created", username);
+            
+            // Get user ID from search (since POST doesn't return body)
+            JsonNode createdUsers = getWebClient()
+                .get()
+                .uri(baseUrl + "/admin/realms/%s/users?username=%s&exact=true".formatted(LAZYCORD_REALM, username))
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+            
+            if (createdUsers != null && createdUsers.isArray() && createdUsers.size() > 0) {
+                userId = createdUsers.get(0).get("id").asText();
+            }
+        } catch (Exception e) {
+            log.error("Failed to create user '{}': {}", username, e.getMessage());
+            return;
+        }
+
+        // Assign roles
+        if (userId != null) {
+            for (String roleName : roleNames) {
+                assignRoleToUser(adminToken, userId, roleName);
+            }
+            log.info("User '{}' created with roles {}", username, roleNames);
+        }
+    }
+
+    private void assignRoleToUser(String adminToken, String userId, String roleName) {
+        // Get role
+        String roleUrl = "/admin/realms/%s/roles/%s".formatted(LAZYCORD_REALM, roleName);
+        JsonNode role = null;
+        
+        try {
+            role = getWebClient()
+                .get()
+                .uri(baseUrl + roleUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+        } catch (Exception e) {
+            log.warn("Role '{}' not found", roleName);
+            return;
+        }
+
+        if (role == null) return;
+
+        // Assign role
+        String assignUrl = "/admin/realms/%s/users/%s/role-mappings/realm".formatted(LAZYCORD_REALM, userId);
+        
+        ArrayNode roles = objectMapper.createArrayNode();
+        ObjectNode roleObj = objectMapper.createObjectNode();
+        roleObj.put("id", role.get("id").asText());
+        roleObj.put("name", role.get("name").asText());
+        roles.add(roleObj);
+
+        try {
+            getWebClient()
+                .post()
+                .uri(baseUrl + assignUrl)
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(roles))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (Exception e) {
+            log.error("Failed to assign role '{}': {}", roleName, e.getMessage());
+        }
     }
 }
