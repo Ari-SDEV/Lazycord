@@ -76,7 +76,9 @@ public class UserService {
             request.getUsername(),
             request.getEmail(),
             request.getPassword(),
-            List.of("user")
+            "user",
+            null,
+            null
         );
 
         if (keycloakId == null) {
@@ -103,13 +105,12 @@ public class UserService {
     public User syncUserWithKeycloak(String keycloakId) {
         var keycloakUser = keycloakUserService.getUserById(keycloakId);
         
-        if (keycloakUser.isEmpty()) {
+        if (keycloakUser == null) {
             throw new RuntimeException("User not found in Keycloak");
         }
 
-        var kcUser = keycloakUser.get();
-        String username = kcUser.getUsername();
-        String email = kcUser.getEmail();
+        String username = keycloakUser.get("username").asText();
+        String email = keycloakUser.has("email") ? keycloakUser.get("email").asText() : null;
 
         return userRepository.findByKeycloakId(keycloakId)
             .orElseGet(() -> {
@@ -140,7 +141,7 @@ public class UserService {
         
         // Sync with Keycloak if needed
         if (updatedUser.getEmail() != null && !updatedUser.getEmail().equals(existingUser.getEmail())) {
-            keycloakUserService.updateUser(existingUser.getKeycloakId(), updatedUser.getEmail(), null);
+            keycloakUserService.updateUser(existingUser.getKeycloakId(), updatedUser.getEmail(), null, null, null);
             existingUser.setEmail(updatedUser.getEmail());
         }
 
