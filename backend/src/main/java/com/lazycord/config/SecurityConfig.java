@@ -1,6 +1,7 @@
 package com.lazycord.config;
 
 import com.lazycord.security.JwtAuthFilter;
+import com.lazycord.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,14 +38,13 @@ public class SecurityConfig {
     @Value("${keycloak.resource:lazycord-backend}")
     private String keycloakClientId;
 
-    private final JwtAuthFilter jwtAuthFilter;
-
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-        this.jwtAuthFilter = jwtAuthFilter;
+    @Bean
+    public JwtAuthFilter jwtAuthFilter(JwtDecoder jwtDecoder, UserService userService) {
+        return new JwtAuthFilter(jwtDecoder, userService);
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
