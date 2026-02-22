@@ -42,13 +42,11 @@ public class KeycloakInitService {
         try {
             logger.info("Initializing Keycloak realm and configuration...");
             
-            Keycloak keycloakAdmin = KeycloakBuilder.builder()
-                    .serverUrl(keycloakServerUrl)
-                    .realm(adminRealm)
-                    .clientId(adminClientId)
-                    .username(adminUsername)
-                    .password(adminPassword)
-                    .build();
+            Keycloak keycloakAdmin = buildKeycloakAdmin();
+            if (keycloakAdmin == null) {
+                logger.warn("Keycloak admin client not available, skipping initialization");
+                return;
+            }
 
             // Create or update realm
             createRealmIfNotExists(keycloakAdmin);
@@ -70,6 +68,19 @@ public class KeycloakInitService {
         } catch (Exception e) {
             logger.error("Failed to initialize Keycloak: {}", e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Build Keycloak admin client. Overrideable for testing.
+     */
+    protected Keycloak buildKeycloakAdmin() {
+        return KeycloakBuilder.builder()
+                .serverUrl(keycloakServerUrl)
+                .realm(adminRealm)
+                .clientId(adminClientId)
+                .username(adminUsername)
+                .password(adminPassword)
+                .build();
     }
 
     private void createRealmIfNotExists(Keycloak keycloakAdmin) {

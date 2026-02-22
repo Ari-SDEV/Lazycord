@@ -89,6 +89,10 @@ class KeycloakInitServiceTest {
         ReflectionTestUtils.setField(keycloakInitService, "adminPassword", "admin");
         ReflectionTestUtils.setField(keycloakInitService, "adminRealm", "master");
         ReflectionTestUtils.setField(keycloakInitService, "adminClientId", "admin-cli");
+        
+        // Mock buildKeycloakAdmin to return our mocked Keycloak instance
+        keycloakInitService = spy(keycloakInitService);
+        doReturn(keycloakAdmin).when(keycloakInitService).buildKeycloakAdmin();
     }
 
     @Test
