@@ -56,3 +56,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+app:
+  upload:
+    dir: /app/uploads
+    max-size: 10485760  # 10MB in bytes
+    max-total-storage: 1073741824  # 1GB per user

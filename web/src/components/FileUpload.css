@@ -1,0 +1,151 @@
+.file-upload {
+  padding: 1rem;
+  border: 2px dashed #404249;
+  border-radius: 8px;
+  background-color: #2f3136;
+}
+
+.drop-zone {
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+}
+
+.drop-zone:hover {
+  background-color: #36393f;
+}
+
+.drop-zone.dragging {
+  background-color: #404249;
+  border-color: #5865f2;
+}
+
+.drop-label {
+  cursor: pointer;
+  display: block;
+}
+
+.drop-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.drop-zone p {
+  color: #96989d;
+  margin: 0.5rem 0;
+}
+
+.drop-zone .or {
+  font-size: 0.875rem;
+}
+
+.browse-link {
+  color: #5865f2;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.file-hints {
+  font-size: 0.75rem;
+  color: #72767d;
+  margin-top: 1rem;
+}
+
+.file-preview {
+  background-color: #36393f;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.file-icon {
+  font-size: 2rem;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.file-size {
+  color: #72767d;
+  font-size: 0.875rem;
+}
+
+.file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.upload-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #5865f2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background-color: #4752c4;
+}
+
+.cancel-btn {
+  padding: 0.75rem 1rem;
+  background-color: #ed4245;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #c03537;
+}
+
+.upload-progress {
+  padding: 1rem;
+  text-align: center;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #202225;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5865f2, #7289da);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.upload-error {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #ed42451a;
+  border: 1px solid #ed4245;
+  border-radius: 4px;
+  color: #ed4245;
+}

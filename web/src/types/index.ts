@@ -26,8 +26,18 @@ export interface ChatMessage {
   senderAvatarUrl?: string
   channelId: string
   attachmentUrl?: string
+  attachments?: FileAttachment[]
   edited: boolean
   createdAt: string
+}
+
+export interface FileAttachment {
+  id: string
+  originalName: string
+  mimeType: string
+  size: number
+  url: string
+  downloadUrl: string
 }
 
 export interface AuthState {
