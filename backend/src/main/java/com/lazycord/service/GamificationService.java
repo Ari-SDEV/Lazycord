@@ -1,6 +1,8 @@
 package com.lazycord.service;
 
+import com.lazycord.model.Rank;
 import com.lazycord.model.User;
+import com.lazycord.repository.RankRepository;
 import com.lazycord.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GamificationService {
 
     private final UserRepository userRepository;
+    private final RankRepository rankRepository;
 
     private static final int[] XP_LEVELS = {
             0,       // Level 1
@@ -37,17 +40,6 @@ public class GamificationService {
             100000   // Level 20
     };
 
-    private static final String[] RANKS = {
-            "NEWBIE",
-            "BRONZE",
-            "SILVER",
-            "GOLD",
-            "PLATINUM",
-            "DIAMOND",
-            "MASTER",
-            "LEGEND"
-    };
-
     @Transactional
     public User addXp(User user, int xp) {
         user.setXp(user.getXp() + xp);
@@ -55,10 +47,12 @@ public class GamificationService {
         int newLevel = calculateLevel(user.getXp());
         if (newLevel > user.getLevel()) {
             user.setLevel(newLevel);
-            String newRank = calculateRank(newLevel);
-            user.setRank(newRank);
-            log.info("User {} leveled up to level {} and rank {}",
-                    user.getUsername(), newLevel, newRank);
+            Rank newRank = calculateRank(newLevel);
+            if (newRank != null) {
+                user.setRank(newRank.getName());
+                log.info("User {} leveled up to level {} and rank {}",
+                        user.getUsername(), newLevel, newRank.getDisplayName());
+            }
         }
 
         return userRepository.save(user);
@@ -91,9 +85,14 @@ public class GamificationService {
         return level;
     }
 
-    public String calculateRank(int level) {
-        int rankIndex = Math.min((level - 1) / 3, RANKS.length - 1);
-        return RANKS[rankIndex];
+    public Rank calculateRank(int level) {
+        return rankRepository.findHighestRankForLevel(level)
+                .orElse(null);
+    }
+
+    public Rank getRankForLevel(int level) {
+        return rankRepository.findByLevel(level)
+                .orElse(null);
     }
 
     public int getXpForNextLevel(int currentLevel) {
