@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL 17 Database
+  # PostgreSQL Database
   postgres:
     image: postgres:17-alpine
     container_name: lazycord-postgres
@@ -9,20 +9,19 @@ services:
       POSTGRES_USER: lazycord
       POSTGRES_PASSWORD: lazycord
       POSTGRES_DB: lazycord
-      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lazycord -d lazycord"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U lazycord"]
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - lazycord-network
 
-  # Redis 7 Cache
+  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: lazycord-redis
@@ -30,51 +29,91 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --requirepass lazycord
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - lazycord-network
 
-  # Keycloak 26 Authentication
+  # Keycloak
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    image: quay.io/keycloak/keycloak:24.0
     container_name: lazycord-keycloak
-    command:
-      - start-dev
-      - --http-port=8080
-      - --hostname=localhost
-      - --hostname-backchannel-dynamic=true
     environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://postgres:5432/lazycord
       KC_DB_USERNAME: lazycord
       KC_DB_PASSWORD: lazycord
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-      KC_FEATURES: token-exchange,admin-fine-grained-authz
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge
     ports:
       - "8081:8080"
+    command: ["start-dev"]
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - lazycord-network
-    volumes:
-      - keycloak_data:/opt/keycloak/data
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lazycord-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lazycord
+      SPRING_DATASOURCE_USERNAME: lazycord
+      SPRING_DATASOURCE_PASSWORD: lazycord
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: lazycord
+      KEYCLOAK_RESOURCE: lazycord-backend
+      KEYCLOAK_CREDENTIALS_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - lazycord-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Frontend
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: lazycord-frontend
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_WS_URL: ws://localhost:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - lazycord-network
 
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
-  keycloak_data:
-    driver: local
 
 networks:
   lazycord-network:
