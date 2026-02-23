@@ -25,6 +25,26 @@
   font-weight: 600;
 }
 
+.nav-links {
+  padding: 0.5rem;
+  border-bottom: 1px solid #202225;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #96989d;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #36393f;
+  color: #dcddde;
+}
+
 .channels-list {
   flex: 1;
   padding: 0.5rem;
