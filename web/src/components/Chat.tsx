@@ -82,6 +82,7 @@ export default function Chat() {
               <h2>
                 {currentChannel.type === 'DIRECT' ? '@' : '#'} {currentChannel.name}
               </h2>
+              <NotificationBell />
             </div>
 
             <div className="messages-container">
