@@ -25,11 +25,16 @@ public class ChannelController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<ChannelDto>> getMyChannels(Authentication authentication) {
+    public ResponseEntity<List<ChannelDto>> getMyChannels(
+            @RequestParam UUID communityId,
+            Authentication authentication) {
         User user = userService.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Community community = communityService.findById(communityId)
+                .orElseThrow(() -> new RuntimeException("Community not found"));
 
-        List<Channel> channels = channelService.findUserChannels(user);
+        List<Channel> channels = channelService.findUserChannels(user, community);
         List<ChannelDto> dtos = channels.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -38,8 +43,11 @@ public class ChannelController {
     }
 
     @GetMapping("/public")
-    public ResponseEntity<List<ChannelDto>> getPublicChannels() {
-        List<Channel> channels = channelService.findAllPublicChannels();
+    public ResponseEntity<List<ChannelDto>> getPublicChannels(@RequestParam UUID communityId) {
+        Community community = communityService.findById(communityId)
+                .orElseThrow(() -> new RuntimeException("Community not found"));
+                
+        List<Channel> channels = channelService.findAllPublicChannels(community);
         List<ChannelDto> dtos = channels.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -49,17 +57,22 @@ public class ChannelController {
 
     @PostMapping
     public ResponseEntity<ChannelDto> createChannel(
+            @RequestParam UUID communityId,
             @RequestBody CreateChannelRequest request,
             Authentication authentication) {
 
         User creator = userService.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Community community = communityService.findById(communityId)
+                .orElseThrow(() -> new RuntimeException("Community not found"));
 
         Channel channel = channelService.createChannel(
                 request.getName(),
                 request.getDescription(),
                 request.getType(),
-                creator
+                creator,
+                community
         );
 
         return ResponseEntity.ok(convertToDto(channel));
