@@ -17,6 +17,10 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, UUID> {
 
     List<ShopItem> findByCommunityAndLevelRequiredLessThanEqualAndActiveTrue(Community community, Integer level);
 
-    // Legacy method
+    // Legacy methods
     List<ShopItem> findByActiveTrue();
+
+    List<ShopItem> findByLevelRequiredLessThanEqualAndActiveTrue(Integer level);
+
+    List<ShopItem> findByTypeAndActiveTrue(ShopItem.ItemType type);
 }

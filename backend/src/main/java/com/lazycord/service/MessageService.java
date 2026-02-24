@@ -32,12 +32,32 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    // Legacy method without community
+    @Transactional
+    public Message saveMessage(String content, User sender, Channel channel) {
+        Message message = new Message();
+        message.setContent(content);
+        message.setSender(sender);
+        message.setChannel(channel);
+        message.setType(Message.MessageType.TEXT);
+
+        return messageRepository.save(message);
+    }
+
     @Transactional(readOnly = true)
     public List<Message> getChannelMessages(UUID channelId, Community community) {
         Channel channel = new Channel();
         channel.setId(channelId);
         channel.setCommunity(community);
-        return messageRepository.findByChannelAndCommunityOrderByCreatedAtAsc(channel);
+        return messageRepository.findByChannelAndCommunityOrderByCreatedAtAsc(channel, community);
+    }
+
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<Message> getChannelMessages(UUID channelId) {
+        Channel channel = new Channel();
+        channel.setId(channelId);
+        return messageRepository.findByChannelOrderByCreatedAtAsc(channel);
     }
 
     @Transactional(readOnly = true)
@@ -45,7 +65,15 @@ public class MessageService {
         Channel channel = new Channel();
         channel.setId(channelId);
         channel.setCommunity(community);
-        return messageRepository.findTop50ByChannelAndCommunityOrderByCreatedAtDesc(channel);
+        return messageRepository.findTop50ByChannelAndCommunityOrderByCreatedAtDesc(channel, community);
+    }
+
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<Message> getChannelMessagesRecent(UUID channelId) {
+        Channel channel = new Channel();
+        channel.setId(channelId);
+        return messageRepository.findTop50ByChannelOrderByCreatedAtDesc(channel);
     }
 
     @Transactional

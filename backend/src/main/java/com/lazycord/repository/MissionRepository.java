@@ -25,6 +25,12 @@ public interface MissionRepository extends JpaRepository<Mission, UUID> {
            "(m.endDate IS NULL OR m.endDate >= :now)")
     List<Mission> findAvailableMissionsByCommunity(@Param("community") Community community, @Param("now") LocalDateTime now);
 
+    // Legacy query without community
+    @Query("SELECT m FROM Mission m WHERE m.active = true AND " +
+           "(m.startDate IS NULL OR m.startDate <= :now) AND " +
+           "(m.endDate IS NULL OR m.endDate >= :now)")
+    List<Mission> findAvailableMissions(@Param("now") LocalDateTime now);
+
     List<Mission> findByCommunityAndTypeAndDifficulty(Community community, MissionType type, Mission.Difficulty difficulty);
 
     // Legacy methods without community

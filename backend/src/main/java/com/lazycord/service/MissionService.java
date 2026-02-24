@@ -29,9 +29,21 @@ public class MissionService {
         return missionRepository.findAvailableMissionsByCommunity(community, LocalDateTime.now());
     }
 
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<Mission> getAvailableMissions() {
+        return missionRepository.findAvailableMissions(LocalDateTime.now());
+    }
+
     @Transactional(readOnly = true)
     public List<Mission> getActiveMissions(Community community) {
         return missionRepository.findByCommunityAndActiveTrue(community);
+    }
+
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<Mission> getActiveMissions() {
+        return missionRepository.findByActiveTrue();
     }
 
     @Transactional(readOnly = true)

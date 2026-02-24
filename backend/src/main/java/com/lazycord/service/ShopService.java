@@ -28,9 +28,21 @@ public class ShopService {
         return shopItemRepository.findByCommunityAndLevelRequiredLessThanEqualAndActiveTrue(community, user.getLevel());
     }
 
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<ShopItem> getAvailableItems(User user) {
+        return shopItemRepository.findByLevelRequiredLessThanEqualAndActiveTrue(user.getLevel());
+    }
+
     @Transactional(readOnly = true)
     public List<ShopItem> getItemsByType(Community community, ShopItem.ItemType type) {
         return shopItemRepository.findByCommunityAndTypeAndActiveTrue(community, type);
+    }
+
+    // Legacy method without community
+    @Transactional(readOnly = true)
+    public List<ShopItem> getItemsByType(ShopItem.ItemType type) {
+        return shopItemRepository.findByTypeAndActiveTrue(type);
     }
 
     @Transactional(readOnly = true)

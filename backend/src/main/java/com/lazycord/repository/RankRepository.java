@@ -24,6 +24,14 @@ public interface RankRepository extends JpaRepository<Rank, UUID> {
     @Query("SELECT r FROM Rank r WHERE r.community = :community AND r.active = true AND r.minLevel <= :level ORDER BY r.sortOrder DESC")
     Optional<Rank> findHighestRankForLevelInCommunity(@Param("community") Community community, @Param("level") int level);
 
+    @Query("SELECT r FROM Rank r WHERE r.active = true AND r.minLevel <= :level AND r.maxLevel >= :level ORDER BY r.sortOrder")
+    Optional<Rank> findByLevel(@Param("level") int level);
+
+    boolean existsByName(String name);
+
+    @Query("SELECT COUNT(r) > 0 FROM Rank r WHERE r.active = true AND r.minLevel <= :maxLevel AND r.maxLevel >= :minLevel")
+    boolean existsByMinLevelLessThanEqualAndMaxLevelGreaterThanEqual(@Param("maxLevel") int maxLevel, @Param("minLevel") int minLevel);
+
     // Legacy methods
     List<Rank> findByActiveTrueOrderBySortOrderAsc();
 }
