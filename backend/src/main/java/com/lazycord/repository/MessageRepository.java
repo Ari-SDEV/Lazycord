@@ -26,4 +26,5 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     // Legacy methods without community (for backwards compatibility)
     List<Message> findByChannelOrderByCreatedAtAsc(Channel channel);
     Page<Message> findByChannelOrderByCreatedAtDesc(Channel channel, Pageable pageable);
+    List<Message> findTop50ByChannelOrderByCreatedAtDesc(Channel channel);
 }
