@@ -56,6 +56,10 @@ public class Mission {
     @Column(nullable = false)
     private boolean active = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "community_id")
+    private Community community;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

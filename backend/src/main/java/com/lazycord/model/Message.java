@@ -48,6 +48,10 @@ public class Message {
     @JoinColumn(name = "message_id")
     private List<FileAttachment> attachments = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "community_id")
+    private Community community;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

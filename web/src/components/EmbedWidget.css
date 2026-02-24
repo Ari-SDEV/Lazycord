@@ -1,0 +1,94 @@
+.embed-widget {
+  width: 350px;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.embed-widget.dark {
+  background: #2f3136;
+  border: 1px solid #404249;
+  color: #dcddde;
+}
+
+.embed-widget.light {
+  background: #ffffff;
+  border: 1px solid #e3e5e8;
+  color: #2e3338;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #36393f;
+}
+
+.embed-widget.light .widget-header {
+  background: #f2f3f5;
+}
+
+.widget-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #5865f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.widget-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.widget-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.embed-widget.light .widget-info h3 {
+  color: #060607;
+}
+
+.member-count {
+  font-size: 0.75rem;
+  color: #72767d;
+}
+
+.embed-widget.light .member-count {
+  color: #747f8d;
+}
+
+.widget-description {
+  padding: 1rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.widget-join-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #5865f2;
+  color: #fff;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.widget-join-btn:hover {
+  background: #4752c4;
+}
