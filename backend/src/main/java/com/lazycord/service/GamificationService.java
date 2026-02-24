@@ -59,6 +59,20 @@ public class GamificationService {
         return userRepository.save(user);
     }
 
+    // Legacy method without community (for backwards compatibility)
+    @Transactional
+    public User addXp(User user, int xp) {
+        user.setXp(user.getXp() + xp);
+
+        int newLevel = calculateLevel(user.getXp());
+        if (newLevel > user.getLevel()) {
+            user.setLevel(newLevel);
+            log.info("User {} leveled up to level {}", user.getUsername(), newLevel);
+        }
+
+        return userRepository.save(user);
+    }
+
     @Transactional
     public User addPoints(User user, int points) {
         user.setPoints(user.getPoints() + points);
@@ -91,8 +105,26 @@ public class GamificationService {
                 .orElse(null);
     }
 
+    // Legacy method without community
+    public Rank calculateRank(int level) {
+        return rankRepository.findByActiveTrueOrderBySortOrderAsc()
+                .stream()
+                .filter(r -> level >= r.getMinLevel() && level <= r.getMaxLevel())
+                .findFirst()
+                .orElse(null);
+    }
+
     public Rank getRankForLevel(int level, Community community) {
         return rankRepository.findByCommunityAndLevel(community, level)
+                .orElse(null);
+    }
+
+    // Legacy method without community
+    public Rank getRankForLevel(int level) {
+        return rankRepository.findByActiveTrueOrderBySortOrderAsc()
+                .stream()
+                .filter(r -> level >= r.getMinLevel() && level <= r.getMaxLevel())
+                .findFirst()
                 .orElse(null);
     }
 

@@ -25,6 +25,10 @@ public interface ChannelRepository extends JpaRepository<Channel, UUID> {
            "(SELECT COUNT(cm) FROM ChannelMember cm WHERE cm.channel = c AND cm.user IN (:user1, :user2)) = 2")
     Optional<Channel> findDirectChannelBetweenUsers(@Param("user1") User user1, @Param("user2") User user2);
 
+    @Query("SELECT c FROM Channel c WHERE c.community = :community AND c.type = 'DIRECT' AND " +
+           "(SELECT COUNT(cm) FROM ChannelMember cm WHERE cm.channel = c AND cm.user IN (:user1, :user2)) = 2")
+    Optional<Channel> findDirectChannelBetweenUsersInCommunity(@Param("user1") User user1, @Param("user2") User user2, @Param("community") Community community);
+
     List<Channel> findByNameContainingIgnoreCase(String name);
 
     // Community-filtered queries
