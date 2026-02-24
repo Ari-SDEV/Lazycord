@@ -23,11 +23,22 @@ public class MessageController {
     private final ChannelService channelService;
 
     @GetMapping("/channel/{channelId}")
-    public ResponseEntity<List<ChatMessageDto>> getChannelMessages(@PathVariable UUID channelId) {
+    public ResponseEntity<List<ChatMessageDto>> getChannelMessages(
+            @PathVariable UUID channelId,
+            @RequestParam UUID communityId) {
+        
+        Community community = communityService.findById(communityId)
+                .orElseThrow(() -> new RuntimeException("Community not found"));
+                
         Channel channel = channelService.findById(channelId)
                 .orElseThrow(() -> new RuntimeException("Channel not found"));
+        
+        // Verify channel belongs to community
+        if (!channel.getCommunity().getId().equals(communityId)) {
+            throw new RuntimeException("Channel does not belong to community");
+        }
 
-        List<Message> messages = messageService.getChannelMessagesRecent(channelId);
+        List<Message> messages = messageService.getChannelMessagesRecent(channelId, community);
         List<ChatMessageDto> dtos = messages.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

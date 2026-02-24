@@ -14,11 +14,15 @@ import java.util.UUID;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, UUID> {
 
+    List<Message> findByChannelAndCommunityOrderByCreatedAtAsc(Channel channel, Community community);
+
+    Page<Message> findByChannelAndCommunityOrderByCreatedAtDesc(Channel channel, Community community, Pageable pageable);
+
+    List<Message> findBySenderAndCommunityOrderByCreatedAtDesc(User sender, Community community);
+
+    List<Message> findTop50ByChannelAndCommunityOrderByCreatedAtDesc(Channel channel, Community community);
+
+    // Legacy methods without community (for backwards compatibility)
     List<Message> findByChannelOrderByCreatedAtAsc(Channel channel);
-
     Page<Message> findByChannelOrderByCreatedAtDesc(Channel channel, Pageable pageable);
-
-    List<Message> findBySenderOrderByCreatedAtDesc(User sender);
-
-    List<Message> findTop50ByChannelOrderByCreatedAtDesc(Channel channel);
 }

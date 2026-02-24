@@ -20,28 +20,31 @@ public class MessageService {
     private final MessageRepository messageRepository;
 
     @Transactional
-    public Message saveMessage(String content, User sender, Channel channel) {
+    public Message saveMessage(String content, User sender, Channel channel, Community community) {
         Message message = new Message();
         message.setContent(content);
         message.setSender(sender);
         message.setChannel(channel);
+        message.setCommunity(community);  // Set community
         message.setType(Message.MessageType.TEXT);
 
         return messageRepository.save(message);
     }
 
     @Transactional(readOnly = true)
-    public List<Message> getChannelMessages(UUID channelId) {
+    public List<Message> getChannelMessages(UUID channelId, Community community) {
         Channel channel = new Channel();
         channel.setId(channelId);
-        return messageRepository.findByChannelOrderByCreatedAtAsc(channel);
+        channel.setCommunity(community);
+        return messageRepository.findByChannelAndCommunityOrderByCreatedAtAsc(channel);
     }
 
     @Transactional(readOnly = true)
-    public List<Message> getChannelMessagesRecent(UUID channelId) {
+    public List<Message> getChannelMessagesRecent(UUID channelId, Community community) {
         Channel channel = new Channel();
         channel.setId(channelId);
-        return messageRepository.findTop50ByChannelOrderByCreatedAtDesc(channel);
+        channel.setCommunity(community);
+        return messageRepository.findTop50ByChannelAndCommunityOrderByCreatedAtDesc(channel);
     }
 
     @Transactional
