@@ -8,6 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -41,6 +43,10 @@ public class Message {
 
     @Column
     private Boolean edited = false;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_id")
+    private List<FileAttachment> attachments = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -98,6 +98,39 @@ export default function Chat() {
                       </span>
                     </div>
                     <p className="message-text">{msg.content}</p>
+                    
+                    {/* Attachments */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className="message-attachments">
+                        {msg.attachments.map((attachment) => (
+                          <div key={attachment.id} className="attachment">
+                            {attachment.mimeType.startsWith('image/') ? (
+                              <img 
+                                src={attachment.url} 
+                                alt={attachment.originalName}
+                                className="attachment-image"
+                                onClick={() => window.open(attachment.url, '_blank')}
+                              />
+                            ) : (
+                              <a 
+                                href={attachment.downloadUrl}
+                                className="attachment-file"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <span className="file-icon">
+                                  {attachment.mimeType === 'application/pdf' ? '📄' : '📎'}
+                                </span>
+                                <span className="file-name">{attachment.originalName}</span>
+                                <span className="file-size">
+                                  {(attachment.size / 1024).toFixed(1)} KB
+                                </span>
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -105,6 +138,13 @@ export default function Chat() {
             </div>
 
             <form className="message-input" onSubmit={handleSend}>
+              <FileUpload 
+                channelId={currentChannel.id} 
+                onUploadComplete={(file) => {
+                  // Send message with attachment
+                  sendMessage(`📎 ${file.originalName}`)
+                }}
+              />
               <input
                 type="text"
                 value={newMessage}
