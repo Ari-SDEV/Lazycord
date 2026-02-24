@@ -46,6 +46,10 @@ public class ShopItem {
     @Column
     private Integer stockLimit;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "community_id")
+    private Community community;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
