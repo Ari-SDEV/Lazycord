@@ -2,8 +2,10 @@ package com.lazycord.controller;
 
 import com.lazycord.dto.ChatMessageDto;
 import com.lazycord.model.Channel;
+import com.lazycord.model.Community;
 import com.lazycord.model.Message;
 import com.lazycord.service.ChannelService;
+import com.lazycord.service.CommunityService;
 import com.lazycord.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ public class MessageController {
 
     private final MessageService messageService;
     private final ChannelService channelService;
+    private final CommunityService communityService;
 
     @GetMapping("/channel/{channelId}")
     public ResponseEntity<List<ChatMessageDto>> getChannelMessages(

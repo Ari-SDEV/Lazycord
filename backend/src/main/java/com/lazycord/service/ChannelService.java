@@ -2,6 +2,7 @@ package com.lazycord.service;
 
 import com.lazycord.model.Channel;
 import com.lazycord.model.ChannelMember;
+import com.lazycord.model.Community;
 import com.lazycord.model.User;
 import com.lazycord.repository.ChannelMemberRepository;
 import com.lazycord.repository.ChannelRepository;

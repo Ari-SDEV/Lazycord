@@ -1,5 +1,6 @@
 package com.lazycord.repository;
 
+import com.lazycord.model.Community;
 import com.lazycord.model.Mission;
 import com.lazycord.model.Mission.MissionType;
 import org.springframework.data.jpa.repository.JpaRepository;

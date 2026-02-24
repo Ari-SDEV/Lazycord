@@ -1,5 +1,6 @@
 package com.lazycord.repository;
 
+import com.lazycord.model.Community;
 import com.lazycord.model.Rank;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

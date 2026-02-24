@@ -3,8 +3,10 @@ package com.lazycord.controller;
 import com.lazycord.dto.ChannelDto;
 import com.lazycord.dto.CreateChannelRequest;
 import com.lazycord.model.Channel;
+import com.lazycord.model.Community;
 import com.lazycord.model.User;
 import com.lazycord.service.ChannelService;
+import com.lazycord.service.CommunityService;
 import com.lazycord.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ public class ChannelController {
 
     private final ChannelService channelService;
     private final UserService userService;
+    private final CommunityService communityService;
 
     @GetMapping
     public ResponseEntity<List<ChannelDto>> getMyChannels(

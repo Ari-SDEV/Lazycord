@@ -1,5 +1,6 @@
 package com.lazycord.service;
 
+import com.lazycord.model.Community;
 import com.lazycord.model.ShopItem;
 import com.lazycord.model.User;
 import com.lazycord.model.UserInventory;
