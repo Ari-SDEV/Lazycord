@@ -23,22 +23,24 @@ public class ChannelService {
     private final ChannelMemberRepository channelMemberRepository;
 
     @Transactional
-    public Channel createChannel(String name, String description, Channel.ChannelType type, User creator) {
+    public Channel createChannel(String name, String description, Channel.ChannelType type, 
+                                  User creator, Community community) {
         Channel channel = new Channel();
         channel.setName(name);
         channel.setDescription(description);
         channel.setType(type);
         channel.setCreatedBy(creator);
-
+        channel.setCommunity(community);  // Set community
+        
         Channel savedChannel = channelRepository.save(channel);
-
+        
         // Add creator as owner
         ChannelMember member = new ChannelMember();
         member.setChannel(savedChannel);
         member.setUser(creator);
         member.setRole(ChannelMember.MemberRole.OWNER);
         channelMemberRepository.save(member);
-
+        
         return savedChannel;
     }
 
@@ -48,13 +50,13 @@ public class ChannelService {
     }
 
     @Transactional(readOnly = true)
-    public List<Channel> findAllPublicChannels() {
-        return channelRepository.findByType(Channel.ChannelType.PUBLIC);
+    public List<Channel> findAllPublicChannels(Community community) {
+        return channelRepository.findByTypeAndCommunity(Channel.ChannelType.PUBLIC, community);
     }
 
     @Transactional(readOnly = true)
-    public List<Channel> findUserChannels(User user) {
-        return channelRepository.findByMember(user);
+    public List<Channel> findUserChannels(User user, Community community) {
+        return channelRepository.findByMemberAndCommunity(user, community);
     }
 
     @Transactional
@@ -90,9 +92,9 @@ public class ChannelService {
     }
 
     @Transactional
-    public Channel createDirectMessage(User user1, User user2) {
+    public Channel createDirectMessage(User user1, User user2, Community community) {
         // Check if DM already exists
-        Optional<Channel> existingDm = channelRepository.findDirectChannelBetweenUsers(user1, user2);
+        Optional<Channel> existingDm = channelRepository.findDirectChannelBetweenUsersInCommunity(user1, user2, community);
         if (existingDm.isPresent()) {
             return existingDm.get();
         }
@@ -101,6 +103,7 @@ public class ChannelService {
         channel.setName(user1.getUsername() + " - " + user2.getUsername());
         channel.setType(Channel.ChannelType.DIRECT);
         channel.setCreatedBy(user1);
+        channel.setCommunity(community);  // Set community
 
         Channel savedChannel = channelRepository.save(channel);
 
