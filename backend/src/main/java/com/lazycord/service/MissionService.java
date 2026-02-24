@@ -24,13 +24,13 @@ public class MissionService {
     private final GamificationService gamificationService;
 
     @Transactional(readOnly = true)
-    public List<Mission> getAvailableMissions() {
-        return missionRepository.findAvailableMissions(LocalDateTime.now());
+    public List<Mission> getAvailableMissions(Community community) {
+        return missionRepository.findAvailableMissionsByCommunity(community, LocalDateTime.now());
     }
 
     @Transactional(readOnly = true)
-    public List<Mission> getActiveMissions() {
-        return missionRepository.findByActiveTrue();
+    public List<Mission> getActiveMissions(Community community) {
+        return missionRepository.findByCommunityAndActiveTrue(community);
     }
 
     @Transactional(readOnly = true)
