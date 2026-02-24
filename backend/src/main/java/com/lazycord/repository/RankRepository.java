@@ -13,17 +13,16 @@ import java.util.UUID;
 @Repository
 public interface RankRepository extends JpaRepository<Rank, UUID> {
 
+    List<Rank> findByCommunityAndActiveTrueOrderBySortOrderAsc(Community community);
+
+    Optional<Rank> findByCommunityAndNameAndActiveTrue(Community community, String name);
+
+    @Query("SELECT r FROM Rank r WHERE r.community = :community AND r.active = true AND r.minLevel <= :level AND r.maxLevel >= :level ORDER BY r.sortOrder")
+    Optional<Rank> findByCommunityAndLevel(@Param("community") Community community, @Param("level") int level);
+
+    @Query("SELECT r FROM Rank r WHERE r.community = :community AND r.active = true AND r.minLevel <= :level ORDER BY r.sortOrder DESC")
+    Optional<Rank> findHighestRankForLevelInCommunity(@Param("community") Community community, @Param("level") int level);
+
+    // Legacy methods
     List<Rank> findByActiveTrueOrderBySortOrderAsc();
-
-    Optional<Rank> findByNameAndActiveTrue(String name);
-
-    @Query("SELECT r FROM Rank r WHERE r.active = true AND r.minLevel <= :level AND r.maxLevel >= :level ORDER BY r.sortOrder")
-    Optional<Rank> findByLevel(@Param("level") int level);
-
-    @Query("SELECT r FROM Rank r WHERE r.active = true AND r.minLevel <= :level ORDER BY r.sortOrder DESC")
-    Optional<Rank> findHighestRankForLevel(@Param("level") int level);
-
-    boolean existsByName(String name);
-
-    boolean existsByMinLevelLessThanEqualAndMaxLevelGreaterThanEqual(int minLevel, int maxLevel);
 }

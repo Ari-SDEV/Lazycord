@@ -41,17 +41,17 @@ public class GamificationService {
     };
 
     @Transactional
-    public User addXp(User user, int xp) {
+    public User addXp(User user, int xp, Community community) {
         user.setXp(user.getXp() + xp);
 
         int newLevel = calculateLevel(user.getXp());
         if (newLevel > user.getLevel()) {
             user.setLevel(newLevel);
-            Rank newRank = calculateRank(newLevel);
+            Rank newRank = calculateRank(newLevel, community);
             if (newRank != null) {
                 user.setRank(newRank.getName());
-                log.info("User {} leveled up to level {} and rank {}",
-                        user.getUsername(), newLevel, newRank.getDisplayName());
+                log.info("User {} leveled up to level {} and rank {} in community {}",
+                        user.getUsername(), newLevel, newRank.getDisplayName(), community.getName());
             }
         }
 
@@ -85,13 +85,13 @@ public class GamificationService {
         return level;
     }
 
-    public Rank calculateRank(int level) {
-        return rankRepository.findHighestRankForLevel(level)
+    public Rank calculateRank(int level, Community community) {
+        return rankRepository.findHighestRankForLevelInCommunity(community, level)
                 .orElse(null);
     }
 
-    public Rank getRankForLevel(int level) {
-        return rankRepository.findByLevel(level)
+    public Rank getRankForLevel(int level, Community community) {
+        return rankRepository.findByCommunityAndLevel(community, level)
                 .orElse(null);
     }
 
