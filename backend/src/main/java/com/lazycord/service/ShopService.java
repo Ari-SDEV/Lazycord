@@ -23,13 +23,13 @@ public class ShopService {
     private final GamificationService gamificationService;
 
     @Transactional(readOnly = true)
-    public List<ShopItem> getAvailableItems(User user) {
-        return shopItemRepository.findByLevelRequiredLessThanEqualAndActiveTrue(user.getLevel());
+    public List<ShopItem> getAvailableItems(User user, Community community) {
+        return shopItemRepository.findByCommunityAndLevelRequiredLessThanEqualAndActiveTrue(community, user.getLevel());
     }
 
     @Transactional(readOnly = true)
-    public List<ShopItem> getItemsByType(ShopItem.ItemType type) {
-        return shopItemRepository.findByTypeAndActiveTrue(type);
+    public List<ShopItem> getItemsByType(Community community, ShopItem.ItemType type) {
+        return shopItemRepository.findByCommunityAndTypeAndActiveTrue(community, type);
     }
 
     @Transactional(readOnly = true)

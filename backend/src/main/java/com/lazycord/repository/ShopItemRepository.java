@@ -10,9 +10,12 @@ import java.util.UUID;
 @Repository
 public interface ShopItemRepository extends JpaRepository<ShopItem, UUID> {
 
+    List<ShopItem> findByCommunityAndActiveTrue(Community community);
+
+    List<ShopItem> findByCommunityAndTypeAndActiveTrue(Community community, ShopItem.ItemType type);
+
+    List<ShopItem> findByCommunityAndLevelRequiredLessThanEqualAndActiveTrue(Community community, Integer level);
+
+    // Legacy method
     List<ShopItem> findByActiveTrue();
-
-    List<ShopItem> findByTypeAndActiveTrue(ShopItem.ItemType type);
-
-    List<ShopItem> findByLevelRequiredLessThanEqualAndActiveTrue(Integer level);
 }
