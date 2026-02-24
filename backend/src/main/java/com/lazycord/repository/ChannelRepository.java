@@ -2,6 +2,7 @@ package com.lazycord.repository;
 
 import com.lazycord.model.Channel;
 import com.lazycord.model.Channel.ChannelType;
+import com.lazycord.model.Community;
 import com.lazycord.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,4 +26,10 @@ public interface ChannelRepository extends JpaRepository<Channel, UUID> {
     Optional<Channel> findDirectChannelBetweenUsers(@Param("user1") User user1, @Param("user2") User user2);
 
     List<Channel> findByNameContainingIgnoreCase(String name);
+
+    // Community-filtered queries
+    List<Channel> findByTypeAndCommunity(ChannelType type, Community community);
+
+    @Query("SELECT c FROM Channel c JOIN c.members cm WHERE cm.user = :user AND c.community = :community")
+    List<Channel> findByMemberAndCommunity(@Param("user") User user, @Param("community") Community community);
 }
