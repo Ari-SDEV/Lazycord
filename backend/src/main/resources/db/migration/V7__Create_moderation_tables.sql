@@ -13,9 +13,11 @@ CREATE TABLE channel_bans (
     active BOOLEAN NOT NULL DEFAULT true,
     unbanned_by UUID REFERENCES users(id),
     unbanned_at TIMESTAMP,
-    unban_reason TEXT,
-    UNIQUE(user_id, channel_id) WHERE active = true
+    unban_reason TEXT
 );
+
+-- Partial unique index for active bans
+CREATE UNIQUE INDEX idx_channel_bans_active_unique ON channel_bans(user_id, channel_id) WHERE active = true;
 
 -- Channel mutes table
 CREATE TABLE channel_mutes (
@@ -28,9 +30,11 @@ CREATE TABLE channel_mutes (
     expires_at TIMESTAMP,
     active BOOLEAN NOT NULL DEFAULT true,
     unmuted_by UUID REFERENCES users(id),
-    unmuted_at TIMESTAMP,
-    UNIQUE(user_id, channel_id) WHERE active = true
+    unmuted_at TIMESTAMP
 );
+
+-- Partial unique index for active mutes
+CREATE UNIQUE INDEX idx_channel_mutes_active_unique ON channel_mutes(user_id, channel_id) WHERE active = true;
 
 -- Reports table
 CREATE TABLE reports (
