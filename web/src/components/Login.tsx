@@ -7,6 +7,8 @@ export default function Login() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [error, setError] = useState('')
   const { login, register } = useAuthStore()
 
@@ -18,7 +20,7 @@ export default function Login() {
     if (isLogin) {
       success = await login(username, password)
     } else {
-      success = await register(username, email, password)
+      success = await register(username, email, password, firstName, lastName)
     }
 
     if (!success) {
@@ -43,16 +45,38 @@ export default function Login() {
           </div>
 
           {!isLogin && (
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email"
-                required
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter email"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter first name"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Enter last name"
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="form-group">

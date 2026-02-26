@@ -2,12 +2,25 @@ export interface User {
   id: string
   username: string
   email: string
+  firstName: string
+  lastName: string
   avatarUrl?: string
   status?: 'online' | 'offline' | 'away' | 'dnd'
   points: number
   level: number
   xp?: number
   rank?: string
+}
+
+export interface Community {
+  id: string
+  embedId: string
+  name: string
+  description?: string
+  isPublic: boolean
+  active: boolean
+  owner?: User
+  createdAt: string
 }
 
 export interface Channel {

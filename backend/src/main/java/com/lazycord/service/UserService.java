@@ -77,8 +77,8 @@ public class UserService {
             request.getEmail(),
             request.getPassword(),
             "user",
-            null,
-            null
+            request.getFirstName(),
+            request.getLastName()
         );
 
         if (keycloakId == null) {
@@ -90,6 +90,8 @@ public class UserService {
         user.setKeycloakId(keycloakId);
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
         user.setPoints(0);
         user.setXp(0);
         user.setLevel(1);
@@ -111,6 +113,8 @@ public class UserService {
 
         String username = keycloakUser.get("username").asText();
         String email = keycloakUser.has("email") ? keycloakUser.get("email").asText() : null;
+        String firstName = keycloakUser.has("firstName") ? keycloakUser.get("firstName").asText() : "";
+        String lastName = keycloakUser.has("lastName") ? keycloakUser.get("lastName").asText() : "";
 
         return userRepository.findByKeycloakId(keycloakId)
             .orElseGet(() -> {
@@ -119,6 +123,8 @@ public class UserService {
                 newUser.setKeycloakId(keycloakId);
                 newUser.setUsername(username);
                 newUser.setEmail(email);
+                newUser.setFirstName(firstName != null ? firstName : "");
+                newUser.setLastName(lastName != null ? lastName : "");
                 newUser.setPoints(0);
                 newUser.setXp(0);
                 newUser.setLevel(1);

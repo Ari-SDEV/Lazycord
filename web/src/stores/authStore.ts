@@ -8,7 +8,7 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   login: (username: string, password: string) => Promise<boolean>
-  register: (username: string, email: string, password: string) => Promise<boolean>
+  register: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => void
 }
@@ -47,12 +47,12 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (username: string, email: string, password: string) => {
+      register: async (username: string, email: string, password: string, firstName: string, lastName: string) => {
         try {
           const response = await fetch(`${API_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password }),
+            body: JSON.stringify({ username, email, password, firstName, lastName }),
           })
 
           if (!response.ok) return false

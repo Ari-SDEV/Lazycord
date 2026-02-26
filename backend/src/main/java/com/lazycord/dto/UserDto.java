@@ -11,6 +11,8 @@ public class UserDto {
     private String keycloakId;
     private String username;
     private String email;
+    private String firstName;
+    private String lastName;
     private String avatarUrl;
     private int points;
     private int xp;
@@ -26,6 +28,8 @@ public class UserDto {
         this.keycloakId = user.getKeycloakId();
         this.username = user.getUsername();
         this.email = user.getEmail();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
         this.avatarUrl = user.getAvatarUrl();
         this.points = user.getPoints();
         this.xp = user.getXp();
@@ -69,6 +73,22 @@ public class UserDto {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getAvatarUrl() {

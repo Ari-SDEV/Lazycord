@@ -21,6 +21,12 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 
@@ -55,10 +61,12 @@ public class User {
 
     public User() {}
 
-    public User(String keycloakId, String username, String email) {
+    public User(String keycloakId, String username, String email, String firstName, String lastName) {
         this.keycloakId = keycloakId;
         this.username = username;
         this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 
     public UUID getId() {
@@ -91,6 +99,22 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getAvatarUrl() {
