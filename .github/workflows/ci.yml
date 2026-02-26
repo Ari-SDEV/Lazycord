@@ -91,18 +91,20 @@ jobs:
             CONTEXT="Branch: ${REF}"
           fi
 
+          PROJECT_NAME="Lazycord"
+
           if [ "${JOB_STATUS}" = "success" ]; then
-            TITLE="✅ Build Success"
+            TITLE="✅ ${PROJECT_NAME} - Build Success"
             COLOR=3066993
-            CONTENT="Build #${RUN_NUMBER} completed successfully ✅"
+            CONTENT="[${PROJECT_NAME}] Build #${RUN_NUMBER} completed successfully ✅"
           elif [ "${JOB_STATUS}" = "failure" ]; then
-            TITLE="❌ Build Failed"
+            TITLE="❌ ${PROJECT_NAME} - Build Failed"
             COLOR=15158332
-            CONTENT="<@.fluffiraffi> Build #${RUN_NUMBER} failed! Investigating... 🚨"
+            CONTENT="<@.fluffiraffi> [${PROJECT_NAME}] Build #${RUN_NUMBER} failed! Investigating... 🚨"
           else
-            TITLE="⚠️ Build ${JOB_STATUS}"
+            TITLE="⚠️ ${PROJECT_NAME} - Build ${JOB_STATUS}"
             COLOR=3447003
-            CONTENT="Build #${RUN_NUMBER} status: ${JOB_STATUS}"
+            CONTENT="[${PROJECT_NAME}] Build #${RUN_NUMBER} status: ${JOB_STATUS}"
           fi
 
           cat > /tmp/discord_payload.json <<EOF
