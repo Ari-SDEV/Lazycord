@@ -8,7 +8,7 @@ interface CommunitySelectionProps {
 }
 
 export default function CommunitySelection({ onSelectCommunity }: CommunitySelectionProps) {
-  const { accessToken, user, logout } = useAuthStore()
+  const { accessToken, user, logout, isAdmin } = useAuthStore()
   const [communities, setCommunities] = useState<Community[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -79,8 +79,6 @@ export default function CommunitySelection({ onSelectCommunity }: CommunitySelec
     }
   }
 
-  const isAdmin = user?.rank === 'Admin' || user?.rank === 'Owner'
-
   if (loading) {
     return (
       <div className="community-selection">
@@ -118,7 +116,7 @@ export default function CommunitySelection({ onSelectCommunity }: CommunitySelec
           </div>
         ))}
 
-        {isAdmin && (
+        {isAdmin() && (
           <div 
             className="community-card create-card"
             onClick={() => setShowCreateModal(true)}
@@ -132,7 +130,7 @@ export default function CommunitySelection({ onSelectCommunity }: CommunitySelec
         )}
       </div>
 
-      {communities.length === 0 && !isAdmin && (
+      {communities.length === 0 && !isAdmin() && (
         <div className="no-communities">
           <p>You are not a member of any community yet.</p>
           <p>Contact an administrator to be invited to a community.</p>

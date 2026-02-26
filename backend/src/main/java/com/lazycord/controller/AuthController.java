@@ -101,12 +101,16 @@ public class AuthController {
             // Update last active
             userService.updateLastActive(user);
             
+            // Extract roles from Keycloak token
+            String[] roles = extractRolesFromToken(accessToken);
+            
             Map<String, Object> response = new HashMap<>();
             response.put("access_token", accessToken);
             response.put("refresh_token", tokenResponse.get("refresh_token").asText());
             response.put("expires_in", tokenResponse.get("expires_in").asInt());
             response.put("token_type", tokenResponse.get("token_type").asText("Bearer"));
             response.put("user", new UserDto(user));
+            response.put("roles", roles);
             
             log.info("Login successful for user: {}", request.getUsername());
             return ResponseEntity.ok(response);
@@ -238,5 +242,34 @@ public class AuthController {
             log.error("Failed to extract user ID from token", e);
         }
         return null;
+    }
+
+    /**
+     * Extract roles from JWT token
+     */
+    private String[] extractRolesFromToken(String accessToken) {
+        try {
+            String[] parts = accessToken.split("\\.");
+            if (parts.length >= 2) {
+                String payload = new String(Base64.getDecoder().decode(parts[1]));
+                JsonNode json = objectMapper.readTree(payload);
+                
+                // Look for realm_access.roles
+                if (json.has("realm_access")) {
+                    JsonNode realmAccess = json.get("realm_access");
+                    if (realmAccess.has("roles")) {
+                        JsonNode roles = realmAccess.get("roles");
+                        String[] roleArray = new String[roles.size()];
+                        for (int i = 0; i < roles.size(); i++) {
+                            roleArray[i] = roles.get(i).asText();
+                        }
+                        return roleArray;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to extract roles from token", e);
+        }
+        return new String[]{"user"}; // Default role
     }
 }
