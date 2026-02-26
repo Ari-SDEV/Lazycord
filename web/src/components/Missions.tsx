@@ -18,7 +18,7 @@ interface Mission {
 }
 
 export default function Missions() {
-  const { user } = useAuthStore()
+  const { user: _user } = useAuthStore()
   const [missions, setMissions] = useState<Mission[]>([])
   const [activeTab, setActiveTab] = useState<'available' | 'progress' | 'completed'>('available')
   const [loading, setLoading] = useState(true)

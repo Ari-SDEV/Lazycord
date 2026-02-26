@@ -24,7 +24,7 @@ interface NotificationState {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
-export const useNotificationStore = create<NotificationState>((set, get) => ({
+export const useNotificationStore = create<NotificationState>((set, _get) => ({
   notifications: [],
   unreadCount: 0,
   loading: false,

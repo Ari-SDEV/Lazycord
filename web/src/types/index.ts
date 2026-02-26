@@ -4,6 +4,10 @@ export interface User {
   email: string
   avatarUrl?: string
   status?: 'online' | 'offline' | 'away' | 'dnd'
+  points: number
+  level: number
+  xp?: number
+  rank?: string
 }
 
 export interface Channel {

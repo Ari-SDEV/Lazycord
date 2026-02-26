@@ -54,7 +54,10 @@ export default function EmbedWidget({ embedId, theme = 'dark' }: EmbedWidgetProp
     document.body.appendChild(iframe)
     
     try {
-      iframe.contentWindow?.location.href = tauriUrl
+      const contentWindow = iframe.contentWindow
+      if (contentWindow) {
+        contentWindow.location.href = tauriUrl
+      }
     } catch {
       // Tauri not available, redirect to web
       window.open(community.joinUrl, '_blank')

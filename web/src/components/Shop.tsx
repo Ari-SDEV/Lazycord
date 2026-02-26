@@ -178,7 +178,7 @@ export default function Shop() {
                   <button
                     className="purchase-btn"
                     onClick={() => purchaseItem(item.id)}
-                    disabled={item.owned || (item.levelRequired && (user?.level || 0) < item.levelRequired)}
+                    disabled={item.owned || !!(item.levelRequired && (user?.level || 0) < item.levelRequired)}
                   >
                     {item.owned ? 'Owned' : `💰 ${item.price}`}
                   </button>
