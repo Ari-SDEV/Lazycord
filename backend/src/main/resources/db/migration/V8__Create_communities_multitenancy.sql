@@ -32,14 +32,7 @@ CREATE TABLE community_members (
     UNIQUE(user_id, community_id)
 );
 
--- Add community_id to existing tables
-ALTER TABLE channels ADD COLUMN community_id UUID REFERENCES communities(id);
-ALTER TABLE messages ADD COLUMN community_id UUID REFERENCES communities(id);
-ALTER TABLE missions ADD COLUMN community_id UUID REFERENCES communities(id);
-ALTER TABLE shop_items ADD COLUMN community_id UUID REFERENCES communities(id);
-ALTER TABLE ranks ADD COLUMN community_id UUID REFERENCES communities(id);
-
--- Create default community for existing data
+-- Create default community for existing data (do this BEFORE adding columns)
 INSERT INTO communities (id, embed_id, name, slug, description, owner_id, api_key, is_public, active)
 SELECT 
     gen_random_uuid(),
@@ -53,35 +46,23 @@ SELECT
     true
 WHERE EXISTS (SELECT 1 FROM users);
 
--- Update existing data to default community
-UPDATE channels SET community_id = (SELECT id FROM communities WHERE slug = 'default') WHERE community_id IS NULL;
-UPDATE messages SET community_id = (SELECT id FROM communities WHERE slug = 'default') WHERE community_id IS NULL;
-UPDATE missions SET community_id = (SELECT id FROM communities WHERE slug = 'default') WHERE community_id IS NULL;
-UPDATE shop_items SET community_id = (SELECT id FROM communities WHERE slug = 'default') WHERE community_id IS NULL;
-UPDATE ranks SET community_id = (SELECT id FROM communities WHERE slug = 'default') WHERE community_id IS NULL;
+-- Add community_id to existing tables (as nullable first)
+ALTER TABLE channels ADD COLUMN community_id UUID REFERENCES communities(id);
+ALTER TABLE messages ADD COLUMN community_id UUID REFERENCES communities(id);
+ALTER TABLE missions ADD COLUMN community_id UUID REFERENCES communities(id);
+ALTER TABLE shop_items ADD COLUMN community_id UUID REFERENCES communities(id);
+ALTER TABLE ranks ADD COLUMN community_id UUID REFERENCES communities(id);
 
--- Make community_id NOT NULL after migration
+-- Update existing data to reference the default community
+UPDATE channels SET community_id = (SELECT id FROM communities LIMIT 1) WHERE community_id IS NULL;
+UPDATE messages SET community_id = (SELECT id FROM communities LIMIT 1) WHERE community_id IS NULL;
+UPDATE missions SET community_id = (SELECT id FROM communities LIMIT 1) WHERE community_id IS NULL;
+UPDATE shop_items SET community_id = (SELECT id FROM communities LIMIT 1) WHERE community_id IS NULL;
+UPDATE ranks SET community_id = (SELECT id FROM communities LIMIT 1) WHERE community_id IS NULL;
+
+-- Now add NOT NULL constraints
 ALTER TABLE channels ALTER COLUMN community_id SET NOT NULL;
+ALTER TABLE messages ALTER COLUMN community_id SET NOT NULL;
 ALTER TABLE missions ALTER COLUMN community_id SET NOT NULL;
 ALTER TABLE shop_items ALTER COLUMN community_id SET NOT NULL;
 ALTER TABLE ranks ALTER COLUMN community_id SET NOT NULL;
-
--- Create indexes
-CREATE INDEX idx_communities_embed_id ON communities(embed_id);
-CREATE INDEX idx_communities_slug ON communities(slug);
-CREATE INDEX idx_communities_owner ON communities(owner_id);
-CREATE INDEX idx_communities_public ON communities(is_public, active) WHERE is_public = true AND active = true;
-
-CREATE INDEX idx_community_members_community ON community_members(community_id);
-CREATE INDEX idx_community_members_user ON community_members(user_id);
-CREATE INDEX idx_community_members_active ON community_members(community_id, active) WHERE active = true;
-
-CREATE INDEX idx_channels_community ON channels(community_id);
-CREATE INDEX idx_messages_community ON messages(community_id);
-CREATE INDEX idx_missions_community ON missions(community_id);
-CREATE INDEX idx_shop_items_community ON shop_items(community_id);
-CREATE INDEX idx_ranks_community ON ranks(community_id);
-
--- Create trigger for updated_at
-CREATE TRIGGER update_communities_updated_at BEFORE UPDATE ON communities
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
