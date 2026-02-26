@@ -4,6 +4,11 @@
 -- Enable pgcrypto extension for gen_random_bytes
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Add first_name and last_name to users table if not exists (needed for system user insert)
+-- These will be properly constrained in V9
+ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100) DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100) DEFAULT '';
+
 -- Communities table
 CREATE TABLE communities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,12 +39,15 @@ CREATE TABLE community_members (
 
 -- Create system user if no users exist (needed for community owner FK)
 -- Note: users table has no password column (Keycloak handles auth)
-INSERT INTO users (id, keycloak_id, email, username, avatar_url, points, xp, level, rank, created_at, last_active)
+-- Note: first_name and last_name added for V9 compatibility
+INSERT INTO users (id, keycloak_id, email, username, first_name, last_name, avatar_url, points, xp, level, rank, created_at, last_active)
 SELECT 
     '00000000-0000-0000-0000-000000000000'::uuid,
     'system-keycloak-id',
     'system@lazycord.local',
     'system',
+    'System',
+    'User',
     NULL,
     0,
     0,
