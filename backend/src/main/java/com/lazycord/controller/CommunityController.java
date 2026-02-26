@@ -2,18 +2,16 @@ package com.lazycord.controller;
 
 import com.lazycord.dto.CommunityDto;
 import com.lazycord.model.Community;
-import com.lazycord.model.CommunityMember;
 import com.lazycord.model.User;
 import com.lazycord.service.CommunityService;
 import com.lazycord.service.UserService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,12 +20,17 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/communities")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:1420", "tauri://localhost"})
-@RequiredArgsConstructor
-@Slf4j
 public class CommunityController {
+
+    private static final Logger log = LoggerFactory.getLogger(CommunityController.class);
 
     private final CommunityService communityService;
     private final UserService userService;
+
+    public CommunityController(CommunityService communityService, UserService userService) {
+        this.communityService = communityService;
+        this.userService = userService;
+    }
 
     @GetMapping("/my")
     public ResponseEntity<List<CommunityDto>> getMyCommunities(Authentication authentication) {
