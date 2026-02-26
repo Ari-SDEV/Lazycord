@@ -33,14 +33,20 @@ CREATE TABLE community_members (
 );
 
 -- Create system user if no users exist (needed for community owner FK)
-INSERT INTO users (id, email, username, password, created_at, updated_at)
+-- Note: users table has no password column (Keycloak handles auth)
+INSERT INTO users (id, keycloak_id, email, username, avatar_url, points, xp, level, rank, created_at, last_active)
 SELECT 
     '00000000-0000-0000-0000-000000000000'::uuid,
+    'system-keycloak-id',
     'system@lazycord.local',
     'system',
-    '$2a$10$invalidhashfordummynotusedforlogin',
+    NULL,
+    0,
+    0,
+    1,
+    'Newbie',
     CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP
+    NULL
 WHERE NOT EXISTS (SELECT 1 FROM users);
 
 -- Create default community for existing data
