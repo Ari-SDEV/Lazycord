@@ -36,6 +36,8 @@ class GamificationServiceTest {
         testUser = new User();
         testUser.setId(UUID.randomUUID());
         testUser.setUsername("testuser");
+        testUser.setFirstName("Test");
+        testUser.setLastName("User");
         testUser.setLevel(1);
         testUser.setXp(0);
         testUser.setPoints(100);

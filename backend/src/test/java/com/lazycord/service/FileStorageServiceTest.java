@@ -39,6 +39,8 @@ class FileAttachmentServiceTest {
         testUser = new User();
         testUser.setId(UUID.randomUUID());
         testUser.setUsername("testuser");
+        testUser.setFirstName("Test");
+        testUser.setLastName("User");
 
         testFile = new MockMultipartFile(
                 "test.jpg",
@@ -140,6 +142,8 @@ class FileAttachmentServiceTest {
         UUID fileId = UUID.randomUUID();
         User otherUser = new User();
         otherUser.setId(UUID.randomUUID());
+        otherUser.setFirstName("Other");
+        otherUser.setLastName("User");
 
         FileAttachment attachment = new FileAttachment();
         attachment.setId(fileId);

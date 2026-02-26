@@ -29,6 +29,8 @@ class UserRepositoryTest {
     private static final String TEST_KEYCLOAK_ID = "test-keycloak-id-123";
     private static final String TEST_USERNAME = "testuser";
     private static final String TEST_EMAIL = "test@example.com";
+    private static final String TEST_FIRST_NAME = "Test";
+    private static final String TEST_LAST_NAME = "User";
 
     @BeforeEach
     void setUp() {
@@ -40,6 +42,8 @@ class UserRepositoryTest {
         testUser.setKeycloakId(TEST_KEYCLOAK_ID);
         testUser.setUsername(TEST_USERNAME);
         testUser.setEmail(TEST_EMAIL);
+        testUser.setFirstName(TEST_FIRST_NAME);
+        testUser.setLastName(TEST_LAST_NAME);
         testUser.setPoints(0);
         testUser.setXp(0);
         testUser.setLevel(1);
@@ -154,6 +158,8 @@ class UserRepositoryTest {
         newUser.setKeycloakId("new-keycloak-id");
         newUser.setUsername("newuser");
         newUser.setEmail("new@example.com");
+        newUser.setFirstName("New");
+        newUser.setLastName("User");
         newUser.setPoints(0);
         newUser.setXp(0);
         newUser.setLevel(1);
@@ -227,6 +233,8 @@ class UserRepositoryTest {
         user2.setKeycloakId("kc-2");
         user2.setUsername("user2");
         user2.setEmail("user2@example.com");
+        user2.setFirstName("User");
+        user2.setLastName("Two");
         user2.setPoints(0);
         user2.setXp(0);
         user2.setLevel(1);
@@ -237,6 +245,8 @@ class UserRepositoryTest {
         user3.setKeycloakId("kc-3");
         user3.setUsername("user3");
         user3.setEmail("user3@example.com");
+        user3.setFirstName("User");
+        user3.setLastName("Three");
         user3.setPoints(0);
         user3.setXp(0);
         user3.setLevel(1);
@@ -257,6 +267,8 @@ class UserRepositoryTest {
         user2.setKeycloakId("kc-2");
         user2.setUsername("user2");
         user2.setEmail("user2@example.com");
+        user2.setFirstName("User");
+        user2.setLastName("Two");
         user2.setPoints(0);
         user2.setXp(0);
         user2.setLevel(1);
@@ -284,6 +296,8 @@ class UserRepositoryTest {
         duplicateUsernameUser.setKeycloakId("different-kc-id");
         duplicateUsernameUser.setUsername(TEST_USERNAME); // Same username
         duplicateUsernameUser.setEmail("different@example.com");
+        duplicateUsernameUser.setFirstName("Different");
+        duplicateUsernameUser.setLastName("User");
         duplicateUsernameUser.setPoints(0);
         duplicateUsernameUser.setXp(0);
         duplicateUsernameUser.setLevel(1);
@@ -303,6 +317,8 @@ class UserRepositoryTest {
         duplicateEmailUser.setKeycloakId("different-kc-id-2");
         duplicateEmailUser.setUsername("differentuser");
         duplicateEmailUser.setEmail(TEST_EMAIL); // Same email
+        duplicateEmailUser.setFirstName("Different");
+        duplicateEmailUser.setLastName("User");
         duplicateEmailUser.setPoints(0);
         duplicateEmailUser.setXp(0);
         duplicateEmailUser.setLevel(1);
@@ -322,6 +338,8 @@ class UserRepositoryTest {
         duplicateKeycloakUser.setKeycloakId(TEST_KEYCLOAK_ID); // Same keycloakId
         duplicateKeycloakUser.setUsername("differentuser");
         duplicateKeycloakUser.setEmail("different@example.com");
+        duplicateKeycloakUser.setFirstName("Different");
+        duplicateKeycloakUser.setLastName("User");
         duplicateKeycloakUser.setPoints(0);
         duplicateKeycloakUser.setXp(0);
         duplicateKeycloakUser.setLevel(1);

@@ -62,6 +62,8 @@ class SecurityIntegrationTest {
         mockUser.setKeycloakId("kc-123");
         mockUser.setUsername("testuser");
         mockUser.setEmail("test@example.com");
+        mockUser.setFirstName("Test");
+        mockUser.setLastName("User");
 
         when(userService.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
         when(userService.updateLastActive(any(User.class))).thenReturn(mockUser);
@@ -79,6 +81,8 @@ class SecurityIntegrationTest {
         mockUser.setKeycloakId("kc-admin");
         mockUser.setUsername("admin");
         mockUser.setEmail("admin@example.com");
+        mockUser.setFirstName("Admin");
+        mockUser.setLastName("User");
 
         when(userService.findByUsername("admin")).thenReturn(Optional.of(mockUser));
         when(userService.updateLastActive(any(User.class))).thenReturn(mockUser);
@@ -96,6 +100,8 @@ class SecurityIntegrationTest {
         mockUser.setKeycloakId("kc-mod");
         mockUser.setUsername("moderator");
         mockUser.setEmail("moderator@example.com");
+        mockUser.setFirstName("Moderator");
+        mockUser.setLastName("User");
 
         when(userService.findByUsername("moderator")).thenReturn(Optional.of(mockUser));
         when(userService.updateLastActive(any(User.class))).thenReturn(mockUser);
