@@ -37,7 +37,7 @@ public class CommunityController {
 
         try {
             Optional<User> userOpt = userService.findByUsername(authentication.getName());
-            if (userOpt.isEmpty()) {
+            if (!userOpt.isPresent()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
@@ -79,7 +79,7 @@ public class CommunityController {
 
         try {
             Optional<User> userOpt = userService.findByUsername(authentication.getName());
-            if (userOpt.isEmpty()) {
+            if (!userOpt.isPresent()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
             }
 
@@ -110,7 +110,7 @@ public class CommunityController {
             Optional<User> userOpt = userService.findByUsername(authentication.getName());
             Optional<Community> communityOpt = communityService.findById(java.util.UUID.fromString(communityId));
 
-            if (userOpt.isEmpty() || communityOpt.isEmpty()) {
+            if (!userOpt.isPresent() || !communityOpt.isPresent()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User or community not found"));
             }
 
