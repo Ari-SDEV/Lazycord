@@ -124,18 +124,28 @@ public class TestDataFactory {
         return kcUser;
     }
 
+    public static final String TEST_FIRST_NAME = "Test";
+    public static final String TEST_LAST_NAME = "User";
+
     /**
      * Creates a user registration request with default values.
      */
     public static UserRegistrationRequest createRegistrationRequest() {
-        return new UserRegistrationRequest(TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD);
+        return new UserRegistrationRequest(TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
     }
 
     /**
      * Creates a user registration request with custom values.
      */
     public static UserRegistrationRequest createRegistrationRequest(String username, String email, String password) {
-        return new UserRegistrationRequest(username, email, password);
+        return new UserRegistrationRequest(username, email, password, TEST_FIRST_NAME, TEST_LAST_NAME);
+    }
+
+    /**
+     * Creates a user registration request with full custom values.
+     */
+    public static UserRegistrationRequest createRegistrationRequest(String username, String email, String password, String firstName, String lastName) {
+        return new UserRegistrationRequest(username, email, password, firstName, lastName);
     }
 
     /**

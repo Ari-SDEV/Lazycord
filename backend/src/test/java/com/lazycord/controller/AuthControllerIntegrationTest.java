@@ -55,6 +55,8 @@ class AuthControllerIntegrationTest {
     private static final String TEST_USERNAME = "testuser";
     private static final String TEST_EMAIL = "test@example.com";
     private static final String TEST_PASSWORD = "password123";
+    private static final String TEST_FIRST_NAME = "Test";
+    private static final String TEST_LAST_NAME = "User";
 
     @BeforeEach
     void setUp() {
@@ -65,7 +67,7 @@ class AuthControllerIntegrationTest {
     void testRegister_Success() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD);
+                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
 
         User mockUser = new User();
         mockUser.setId(UUID.randomUUID());
@@ -94,7 +96,7 @@ class AuthControllerIntegrationTest {
     void testRegister_DuplicateUser() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
-                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD);
+                TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
 
         when(userService.createUser(any(UserRegistrationRequest.class)))
                 .thenThrow(new RuntimeException("Username already exists"));
@@ -111,7 +113,7 @@ class AuthControllerIntegrationTest {
     void testRegister_InvalidInput() throws Exception {
         // Arrange - Invalid input (short password)
         UserRegistrationRequest request = new UserRegistrationRequest(
-                "us", "invalid-email", "123");
+                "us", "invalid-email", "123", TEST_FIRST_NAME, TEST_LAST_NAME);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -239,7 +241,7 @@ class AuthControllerIntegrationTest {
     void testRegister_EmptyUsername() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
-                "", TEST_EMAIL, TEST_PASSWORD);
+                "", TEST_EMAIL, TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -252,7 +254,7 @@ class AuthControllerIntegrationTest {
     void testRegister_InvalidEmail() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
-                TEST_USERNAME, "not-an-email", TEST_PASSWORD);
+                TEST_USERNAME, "not-an-email", TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -265,7 +267,7 @@ class AuthControllerIntegrationTest {
     void testRegister_ShortPassword() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
-                TEST_USERNAME, TEST_EMAIL, "12345");
+                TEST_USERNAME, TEST_EMAIL, "12345", TEST_FIRST_NAME, TEST_LAST_NAME);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
