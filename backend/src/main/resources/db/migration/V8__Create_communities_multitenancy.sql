@@ -1,6 +1,9 @@
 -- V8__Create_communities_multitenancy.sql
 -- Creates Community entity and updates existing tables for multitenancy
 
+-- Enable pgcrypto extension for gen_random_bytes
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Communities table
 CREATE TABLE communities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
