@@ -12,6 +12,8 @@ export interface User {
   rank?: string
 }
 
+export type CommunityRole = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | 'NONE'
+
 export interface Community {
   id: string
   embedId: string
@@ -21,6 +23,8 @@ export interface Community {
   active: boolean
   owner?: User
   createdAt: string
+  userRole: CommunityRole
+  isMember: boolean
 }
 
 export interface Channel {

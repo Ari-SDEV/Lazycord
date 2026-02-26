@@ -1,7 +1,9 @@
 package com.lazycord.controller;
 
 import com.lazycord.dto.CommunityDto;
+import com.lazycord.dto.CommunityWithRoleDto;
 import com.lazycord.model.Community;
+import com.lazycord.model.CommunityMember;
 import com.lazycord.model.User;
 import com.lazycord.service.CommunityService;
 import com.lazycord.service.UserService;
@@ -33,7 +35,7 @@ public class CommunityController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<CommunityDto>> getMyCommunities(Authentication authentication) {
+    public ResponseEntity<List<CommunityWithRoleDto>> getMyCommunities(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -47,8 +49,12 @@ public class CommunityController {
             User user = userOpt.get();
             List<Community> communities = communityService.getUserCommunities(user);
             
-            List<CommunityDto> dtos = communities.stream()
-                    .map(CommunityDto::new)
+            // Get community memberships with roles
+            List<CommunityWithRoleDto> dtos = communities.stream()
+                    .map(community -> {
+                        Optional<CommunityMember> membership = communityService.findMembership(user, community);
+                        return new CommunityWithRoleDto(community, membership.orElse(null));
+                    })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(dtos);

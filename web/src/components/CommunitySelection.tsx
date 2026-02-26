@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../stores/authStore'
+import { useCommunityStore } from '../stores/communityStore'
 import type { Community } from '../types'
 import './CommunitySelection.css'
 
@@ -9,6 +10,7 @@ interface CommunitySelectionProps {
 
 export default function CommunitySelection({ onSelectCommunity }: CommunitySelectionProps) {
   const { accessToken, user, logout, isAdmin } = useAuthStore()
+  const { setCurrentCommunity } = useCommunityStore()
   const [communities, setCommunities] = useState<Community[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -101,7 +103,10 @@ export default function CommunitySelection({ onSelectCommunity }: CommunitySelec
           <div 
             key={community.id} 
             className="community-card"
-            onClick={() => onSelectCommunity(community)}
+            onClick={() => {
+              setCurrentCommunity(community)
+              onSelectCommunity(community)
+            }}
           >
             <div className="community-card-avatar">
               {community.name[0].toUpperCase()}
