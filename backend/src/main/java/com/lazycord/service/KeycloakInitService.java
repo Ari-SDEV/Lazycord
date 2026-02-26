@@ -309,21 +309,24 @@ public class KeycloakInitService {
     }
 
     private void createDefaultUsersIfNotExists(String adminToken) {
-        // Create admin user
+        // Create admin user (with firstName and lastName)
         createUserIfNotExists(adminToken, "admin", "admin123", "admin@lazycord.local", 
+                "System", "Administrator",
                 List.of("admin", "moderator", "user"));
         
-        // Create moderator user
+        // Create moderator user (with firstName and lastName)
         createUserIfNotExists(adminToken, "moderator", "mod123", "moderator@lazycord.local", 
+                "Community", "Moderator",
                 List.of("moderator", "user"));
         
-        // Create regular user
+        // Create regular user (with firstName and lastName)
         createUserIfNotExists(adminToken, "user", "user123", "user@lazycord.local", 
+                "Regular", "User",
                 List.of("user"));
     }
 
     private void createUserIfNotExists(String adminToken, String username, String password, 
-            String email, List<String> roleNames) {
+            String email, String firstName, String lastName, List<String> roleNames) {
         // Check if user exists
         String usersUrl = "/admin/realms/%s/users?username=%s&exact=true".formatted(LAZYCORD_REALM, username);
         
@@ -348,6 +351,8 @@ public class KeycloakInitService {
         ObjectNode user = objectMapper.createObjectNode();
         user.put("username", username);
         user.put("email", email);
+        user.put("firstName", firstName);
+        user.put("lastName", lastName);
         user.put("emailVerified", true);
         user.put("enabled", true);
         
@@ -372,7 +377,7 @@ public class KeycloakInitService {
                 .bodyToMono(JsonNode.class)
                 .block();
             
-            log.info("User '{}' created", username);
+            log.info("User '{}' created with firstName='{}', lastName='{}'", username, firstName, lastName);
             
             // Get user ID from search (since POST doesn't return body)
             JsonNode createdUsers = getWebClient()

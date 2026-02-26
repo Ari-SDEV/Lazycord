@@ -9,5 +9,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+COPY wait-for-keycloak.sh /wait-for-keycloak.sh
+RUN chmod +x /wait-for-keycloak.sh && apk add --no-cache wget
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/wait-for-keycloak.sh", "java", "-jar", "app.jar"]
