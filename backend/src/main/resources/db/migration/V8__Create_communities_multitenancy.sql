@@ -32,7 +32,18 @@ CREATE TABLE community_members (
     UNIQUE(user_id, community_id)
 );
 
--- Create default community for existing data (do this BEFORE adding columns)
+-- Create system user if no users exist (needed for community owner FK)
+INSERT INTO users (id, email, username, password, created_at, updated_at)
+SELECT 
+    '00000000-0000-0000-0000-000000000000'::uuid,
+    'system@lazycord.local',
+    'system',
+    '$2a$10$invalidhashfordummynotusedforlogin',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM users);
+
+-- Create default community for existing data
 INSERT INTO communities (id, embed_id, name, slug, description, owner_id, api_key, is_public, active)
 SELECT 
     gen_random_uuid(),
@@ -40,11 +51,13 @@ SELECT
     'Default Community',
     'default',
     'Default community for existing data',
-    (SELECT id FROM users ORDER BY created_at LIMIT 1),
+    COALESCE(
+        (SELECT id FROM users WHERE email != 'system@lazycord.local' ORDER BY created_at LIMIT 1),
+        (SELECT id FROM users ORDER BY created_at LIMIT 1)
+    ),
     encode(gen_random_bytes(32), 'hex'),
     true,
-    true
-WHERE EXISTS (SELECT 1 FROM users);
+    true;
 
 -- Add community_id to existing tables (as nullable first)
 ALTER TABLE channels ADD COLUMN community_id UUID REFERENCES communities(id);
