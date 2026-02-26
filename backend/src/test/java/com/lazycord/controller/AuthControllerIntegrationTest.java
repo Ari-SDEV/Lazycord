@@ -63,17 +63,24 @@ class AuthControllerIntegrationTest {
         // Setup is handled per test
     }
 
+    private User createMockUser() {
+        User mockUser = new User();
+        mockUser.setId(UUID.randomUUID());
+        mockUser.setKeycloakId("keycloak-id-123");
+        mockUser.setUsername(TEST_USERNAME);
+        mockUser.setEmail(TEST_EMAIL);
+        mockUser.setFirstName(TEST_FIRST_NAME);
+        mockUser.setLastName(TEST_LAST_NAME);
+        return mockUser;
+    }
+
     @Test
     void testRegister_Success() throws Exception {
         // Arrange
         UserRegistrationRequest request = new UserRegistrationRequest(
                 TEST_USERNAME, TEST_EMAIL, TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME);
 
-        User mockUser = new User();
-        mockUser.setId(UUID.randomUUID());
-        mockUser.setKeycloakId("keycloak-id-123");
-        mockUser.setUsername(TEST_USERNAME);
-        mockUser.setEmail(TEST_EMAIL);
+        User mockUser = createMockUser();
 
         // Note: In actual integration, this would create a user and login
         // For unit testing, we mock the behavior
@@ -186,11 +193,7 @@ class AuthControllerIntegrationTest {
     @WithMockUser(username = TEST_USERNAME, roles = {"user"})
     void testGetCurrentUser_Authorized() throws Exception {
         // Arrange
-        User mockUser = new User();
-        mockUser.setId(UUID.randomUUID());
-        mockUser.setKeycloakId("keycloak-id-123");
-        mockUser.setUsername(TEST_USERNAME);
-        mockUser.setEmail(TEST_EMAIL);
+        User mockUser = createMockUser();
         mockUser.setPoints(0);
         mockUser.setXp(0);
         mockUser.setLevel(1);
