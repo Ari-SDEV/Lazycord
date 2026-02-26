@@ -37,6 +37,9 @@ public class TestDataFactory {
     public static final String MODERATOR_EMAIL = "moderator@lazycord.local";
     public static final String MODERATOR_PASSWORD = "mod123";
 
+    public static final String TEST_FIRST_NAME = "Test";
+    public static final String TEST_LAST_NAME = "User";
+
     /**
      * Creates a basic test user with default values.
      */
@@ -46,6 +49,8 @@ public class TestDataFactory {
         user.setKeycloakId(TEST_KEYCLOAK_ID);
         user.setUsername(TEST_USERNAME);
         user.setEmail(TEST_EMAIL);
+        user.setFirstName(TEST_FIRST_NAME);
+        user.setLastName(TEST_LAST_NAME);
         user.setAvatarUrl(TEST_AVATAR_URL);
         user.setPoints(100);
         user.setXp(500);
@@ -65,6 +70,8 @@ public class TestDataFactory {
         user.setKeycloakId(keycloakId);
         user.setUsername(username);
         user.setEmail(email);
+        user.setFirstName("Test");
+        user.setLastName("User");
         user.setPoints(0);
         user.setXp(0);
         user.setLevel(1);
@@ -123,9 +130,6 @@ public class TestDataFactory {
         kcUser.put("enabled", true);
         return kcUser;
     }
-
-    public static final String TEST_FIRST_NAME = "Test";
-    public static final String TEST_LAST_NAME = "User";
 
     /**
      * Creates a user registration request with default values.
