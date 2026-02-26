@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { useChatStore } from '../stores/chatStore'
+import NotificationBell from './NotificationBell'
+import FileUpload from './FileUpload'
 import './Chat.css'
 
 export default function Chat() {
@@ -43,7 +45,7 @@ export default function Chat() {
 
   return (
     <div className="chat-container">
-      <!-- Sidebar -->
+      {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
           <h3>Channels</h3>
@@ -74,7 +76,7 @@ export default function Chat() {
         </div>
       </div>
 
-      <!-- Main Chat -->
+      {/* Main Chat */}
       <div className="main-chat">
         {currentChannel ? (
           <>
